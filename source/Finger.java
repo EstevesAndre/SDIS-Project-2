@@ -2,7 +2,9 @@ package source;
 
 public class Finger {
 
-    public Finger() {
-        
+    private String address;
+
+    public Finger(String address) {
+        this.address = address;
     }
 }
