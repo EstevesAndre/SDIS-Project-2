@@ -10,7 +10,7 @@ public class App {
             System.exit(1);
         }
         else 
-            new Chord(args[0], args[1]);
+            new ChordNode(args[0], args[1]);
 
         System.out.println("Chord created");
     }

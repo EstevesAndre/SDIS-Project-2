@@ -4,7 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.HashMap;
 
-public class Chord {
+public class ChordNode {
 
     private static final int FINGERS_SIZE = 32;
 
@@ -17,14 +17,14 @@ public class Chord {
 
     private final static char[] hexArray = "0123456789ABCDEF".toCharArray();
 
-    public Chord(String address, String port) throws Exception {
+    public ChordNode(String address, String port) throws Exception {
         this.address = address;
         this.Id = getAddressHashID(address + '_' + port);
         this.port = Integer.valueOf(port);
 
         fingers = new HashMap<Integer, Finger>(FINGERS_SIZE);
 
-        System.out.println("Chord:\n - Address -> " + address + "\n - Port -> " + port);
+        System.out.println("Chord node:\n - Address -> " + address + "\n - Port -> " + port);
     }
 
     public Finger getSuccessor() {
