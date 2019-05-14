@@ -1,1 +1,1 @@
-javac -d bin source/*.java
+javac -d bin source/*.java service/*.java threads/*.java
