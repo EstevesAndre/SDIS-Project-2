@@ -4,6 +4,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.HashMap;
 
+import threads.Listener;
+
 public class ChordNode {
 
     private static final int FINGERS_SIZE = 32;
@@ -11,7 +13,8 @@ public class ChordNode {
     private final String Id;
     private final String address;
     private final int port;
-    private HashMap<Integer, Finger> fingers; // think about that
+    private String existingChordNode;
+    private HashMap<Integer, Finger> fingers;
     private Finger successor;
     private Finger predecessor;
 
@@ -21,10 +24,28 @@ public class ChordNode {
         this.address = address;
         this.Id = getAddressHashID(address + '_' + port);
         this.port = Integer.valueOf(port);
+        existingChordNode = null;
+
+        this.initialize();
+    }
+
+    public ChordNode(String address, String port, String existingAddress, String existingPort) throws Exception {
+        this.address = address;
+        this.Id = getAddressHashID(address + '_' + port);
+        this.port = Integer.valueOf(port);
+        existingChordNode = getAddressHashID(existingAddress + '_' + existingPort);
+
+        this.initialize();
+    }
+
+    private void initialize() {
+        System.out.println("Chord node:\n - Address -> " + address + "\n - Port -> " + port);
 
         fingers = new HashMap<Integer, Finger>(FINGERS_SIZE);
 
-        System.out.println("Chord node:\n - Address -> " + address + "\n - Port -> " + port);
+        this.initializeFingers();
+        this.initializeSuccessors();
+        this.initializeThreads();
     }
 
     public Finger getSuccessor() {
@@ -39,6 +60,10 @@ public class ChordNode {
         return predecessor;
     }
 
+    public void setPredecessor(Finger newPredecessor) {
+        this.predecessor = newPredecessor;
+    }
+
     public String getId() {
         return Id;
     }
@@ -47,8 +72,11 @@ public class ChordNode {
         return address;
     }
 
-    public static String getAddressHashID(String toHash) throws Exception {
+    public int getPort() {
+        return port;
+    }
 
+    public static String getAddressHashID(String toHash) throws Exception {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
 
         return bytesToHex(digest.digest(toHash.getBytes(StandardCharsets.UTF_8)));
@@ -62,6 +90,28 @@ public class ChordNode {
             hexChars[j * 2 + 1] = hexArray[v & 0x0F];
         }
         return new String(hexChars);
+    }
+
+    public void initializeFingers() {
+
+        if (this.existingChordNode == null) { // first node
+            for (int i = 0; i < FINGERS_SIZE; i++)
+                this.fingers.put(i, new Finger(this.address, this.port));
+            System.out.println("Finger table created");
+        } else {
+            // join node to ring
+            // TODO
+        }
+    }
+
+    private void initializeSuccessors() {
+
+    }
+
+    // private void setIndexFinger(int index,
+
+    private void initializeThreads() {
+        new Thread(new Listener(this)).start();
     }
 
 }
