@@ -10,8 +10,6 @@ public class TestApp {
 
     public TestApp(String args[]) throws Exception {
 
-        System.setProperty("java.net.preferIPv4Stack", "true");
-
         this.operation = args[1];
         this.operationArgs = new ArrayList<>();
 
@@ -35,7 +33,7 @@ public class TestApp {
 
         TestApp testApp = new TestApp(args);
 
-        testApp.invokeRequest();
+        // testApp.invokeRequest();
     }
 
     private void invokeRequest() throws Exception {
