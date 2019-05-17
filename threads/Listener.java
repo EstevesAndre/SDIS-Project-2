@@ -1,31 +1,44 @@
 package threads;
 
 import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;
 
 import source.ChordNode;
+import threads.Request;
 
 public class Listener implements Runnable {
 
     private ChordNode node;
+    private SSLServerSocket sslServerSocket;
 
     public Listener(ChordNode node) {
         this.node = node;
+
+        try {
+            SSLServerSocketFactory ssServerSocketFactory = (SSLServerSocketFactory) SSLServerSocketFactory.getDefault();
+            sslServerSocket = (SSLServerSocket) ssServerSocketFactory.createServerSocket(this.node.getPort());
+
+        } catch (IOException e) {
+            System.out.println(
+                    "ERROR : serverSocketFactory biding...\nMaybe your port is already in use, check your input parameters!");
+            // e.printStackTrace();
+            System.exit(-2);
+        }
+
+        sslServerSocket.setNeedClientAuth(true);
     }
 
     @Override
     public void run() {
         try {
-            ServerSocket serverSocket = new ServerSocket(this.node.getPort());
+            SSLSocket sslSocket;
 
             while (true) {
-                Socket clientSocket = serverSocket.accept();
-                System.out.println("> Received info");
-
+                sslSocket = (SSLSocket) this.sslServerSocket.accept();
+                System.out.println("> Received connection");
+                new Thread(new Request(this.node, sslSocket)).start();
             }
         } catch (IOException e) {
             System.err.println("Error listening on server socket");

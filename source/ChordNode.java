@@ -1,19 +1,25 @@
 package source;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.util.HashMap;
 
+import javax.net.ssl.SSLSocket;
+
 import threads.Listener;
+import handlers.IOManager;
+import handlers.MessageManager;
 
 public class ChordNode {
 
     private static final int FINGERS_SIZE = 32;
 
-    private final String Id;
+    private final String ID;
     private final String address;
     private final int port;
     private String existingChordNode;
+    private String existingNodeAddress;
+    private int existingNodePort;
     private HashMap<Integer, Finger> fingers;
     private Finger successor;
     private Finger predecessor;
@@ -22,7 +28,7 @@ public class ChordNode {
 
     public ChordNode(String address, String port) throws Exception {
         this.address = address;
-        this.Id = getAddressHashID(address + '_' + port);
+        this.ID = IOManager.getAddressHashID(address + '_' + port);
         this.port = Integer.valueOf(port);
         existingChordNode = null;
 
@@ -31,9 +37,11 @@ public class ChordNode {
 
     public ChordNode(String address, String port, String existingAddress, String existingPort) throws Exception {
         this.address = address;
-        this.Id = getAddressHashID(address + '_' + port);
+        this.ID = IOManager.getAddressHashID(address + '_' + port);
         this.port = Integer.valueOf(port);
-        existingChordNode = getAddressHashID(existingAddress + '_' + existingPort);
+        this.existingNodeAddress = existingAddress;
+        this.existingNodePort = Integer.valueOf(existingPort);
+        this.existingChordNode = IOManager.getAddressHashID(existingAddress + '_' + existingPort);
 
         this.initialize();
     }
@@ -65,7 +73,7 @@ public class ChordNode {
     }
 
     public String getId() {
-        return Id;
+        return ID;
     }
 
     public String getAddress() {
@@ -76,42 +84,53 @@ public class ChordNode {
         return port;
     }
 
-    public static String getAddressHashID(String toHash) throws Exception {
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-
-        return bytesToHex(digest.digest(toHash.getBytes(StandardCharsets.UTF_8)));
-    }
-
-    public static String bytesToHex(byte[] bytes) throws Exception {
-        char[] hexChars = new char[bytes.length * 2];
-        for (int j = 0; j < bytes.length; j++) {
-            int v = bytes[j] & 0xFF;
-            hexChars[j * 2] = hexArray[v >>> 4];
-            hexChars[j * 2 + 1] = hexArray[v & 0x0F];
-        }
-        return new String(hexChars);
-    }
-
     public void initializeFingers() {
 
         if (this.existingChordNode == null) { // first node
             for (int i = 0; i < FINGERS_SIZE; i++)
                 this.fingers.put(i, new Finger(this.address, this.port));
-            System.out.println("Finger table created");
         } else {
             // join node to ring
             // TODO
         }
+
+        System.out.println("Finger table created");
     }
 
     private void initializeSuccessors() {
 
+        if (this.existingChordNode == null) {
+            // first node
+            this.predecessor = this.fingers.get(0); // first
+            this.successor = this.fingers.get(0); // first
+
+        } else {
+            // join node to ring on existingChordNode given
+            if (this.address.equals(this.existingChordNode)) {
+                System.out.println("Wrong request, successor of himself");
+                return;
+            }
+
+            System.out.println("Joining node " + this.existingChordNode);
+            SSLSocket socket = null;
+
+            try {
+                socket = MessageManager.makeConnection(this.existingNodeAddress, this.existingNodePort);
+                ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
+                output.writeObject("CARALHOOOO");
+
+            } catch (IOException e) {
+                throw new RuntimeException("Failed connecting to server socket.", e);
+            }
+
+        }
     }
 
     // private void setIndexFinger(int index,
 
     private void initializeThreads() {
         new Thread(new Listener(this)).start();
+        // new Thread(new )
     }
 
 }
