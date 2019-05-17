@@ -19,15 +19,16 @@ public class Listener implements Runnable {
         try {
             SSLServerSocketFactory ssServerSocketFactory = (SSLServerSocketFactory) SSLServerSocketFactory.getDefault();
             sslServerSocket = (SSLServerSocket) ssServerSocketFactory.createServerSocket(this.node.getPort());
+            sslServerSocket.setEnabledCipherSuites(sslServerSocket.getSupportedCipherSuites());
 
         } catch (IOException e) {
             System.out.println(
                     "ERROR : serverSocketFactory biding...\nMaybe your port is already in use, check your input parameters!");
-            // e.printStackTrace();
+            e.printStackTrace();
             System.exit(-2);
         }
 
-        sslServerSocket.setNeedClientAuth(true);
+        // sslServerSocket.setNeedClientAuth(true);
     }
 
     @Override
@@ -36,6 +37,7 @@ public class Listener implements Runnable {
             SSLSocket sslSocket;
 
             while (true) {
+                System.out.println("I'm listening...");
                 sslSocket = (SSLSocket) this.sslServerSocket.accept();
                 System.out.println("> Received connection");
                 new Thread(new Request(this.node, sslSocket)).start();

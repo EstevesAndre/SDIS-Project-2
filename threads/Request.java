@@ -22,24 +22,29 @@ public class Request implements Runnable {
     @Override
     public void run() {
 
-        ObjectInputStream input;
-        ObjectOutputStream output;
-        byte[] read = null;
+        ObjectInputStream input = null;
+        ObjectOutputStream output = null;
 
         try {
             input = new ObjectInputStream(socket.getInputStream());
             output = new ObjectOutputStream(socket.getOutputStream());
-
-            read = (byte[]) input.readObject();
-            System.out.println("Receveid message: " + new String(read, StandardCharsets.UTF_8));
-
         } catch (IOException e) {
             System.out.println(
                     "Error creating input and/or output streams for socket connection OR ailed reading object from socket stream");
             e.printStackTrace();
+        }
+
+        byte[] read = null;
+
+        try {
+            read = (byte[]) input.readObject();
+            System.out.println("Receveid message: " + new String(read, StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            throw new RuntimeException("Failed reading object from socket stream.", e);
         } catch (ClassNotFoundException e) {
-            System.out.println("Error creating input and/or output streams for socket connection...");
-            e.printStackTrace();
+            throw new RuntimeException("Class not found locally, check serialVersionUID.", e);
+        } catch (ClassCastException e) {
+            throw new RuntimeException("Failed casting read Object to Message.", e);
         }
 
         // sends request
