@@ -50,6 +50,7 @@ public class ChordNode {
         System.out.println("Chord node:\n - Address -> " + address + "\n - Port -> " + port);
 
         fingers = new HashMap<Integer, Finger>(FINGERS_SIZE);
+        initiateSystemConfigs();
 
         this.initializeFingers();
         this.initializeSuccessors();
@@ -84,7 +85,12 @@ public class ChordNode {
         return port;
     }
 
-    public void initializeFingers() {
+    private void initiateSystemConfigs() {
+        System.setProperty("javax.net.ssl.keyStore", "keystore");
+        System.setProperty("javax.net.ssl.trustStore", "truststore");
+    }
+
+    private void initializeFingers() {
 
         if (this.existingChordNode == null) { // first node
             for (int i = 0; i < FINGERS_SIZE; i++)
@@ -116,8 +122,9 @@ public class ChordNode {
 
             try {
                 socket = MessageManager.makeConnection(this.existingNodeAddress, this.existingNodePort);
+
                 ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
-                output.writeObject("CARALHOOOO");
+                output.writeObject("CARALHOOOO".getBytes());
 
             } catch (IOException e) {
                 throw new RuntimeException("Failed connecting to server socket.", e);
@@ -125,8 +132,6 @@ public class ChordNode {
 
         }
     }
-
-    // private void setIndexFinger(int index,
 
     private void initializeThreads() {
         new Thread(new Listener(this)).start();
