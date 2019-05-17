@@ -5,4 +5,4 @@
 #     exit 1
 # fi
 
-java -Djavax.net.ssl.keyStore=SDIS -Djavax.net.ssl.keyStorePassword=123456 -classpath bin service/Peer
+java -Djavax.net.ssl.keyStore=keystore -Djavax.net.ssl.keyStorePassword=123456 -classpath bin service/Peer $@
