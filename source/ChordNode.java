@@ -125,6 +125,7 @@ public class ChordNode {
 
                 ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
                 output.writeObject("CARALHOOOO".getBytes());
+                socket.close();
 
             } catch (IOException e) {
                 throw new RuntimeException("Failed connecting to server socket.", e);
