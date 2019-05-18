@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 
 import javax.net.ssl.SSLSocket;
 
+import handlers.RequestManager;
 import source.ChordNode;
 
 public class Request implements Runnable {
@@ -38,7 +39,6 @@ public class Request implements Runnable {
 
         try {
             read = (byte[]) input.readObject();
-            System.out.println("Receveid message: " + new String(read, StandardCharsets.UTF_8));
         } catch (IOException e) {
             throw new RuntimeException("Failed reading object from socket stream.", e);
         } catch (ClassNotFoundException e) {
@@ -49,6 +49,15 @@ public class Request implements Runnable {
 
         // sends request
         // waits for response
-        // and sends back to output
+        byte[] response = RequestManager.handleRequest(node, read);
+
+        try {
+            if (response != null)
+                output.writeObject(response);
+            input.close();
+            output.close();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed writing object to socket stream.", e);
+        }
     }
 }
