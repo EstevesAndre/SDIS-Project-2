@@ -1,35 +1,32 @@
 package handlers;
 
-import java.io.IOException;
-
-import javax.net.ssl.SSLSocket;
-import javax.net.ssl.SSLSocketFactory;
-
 // Class used to create message requests
 
-public class MessageManager {
+public abstract class MessageManager {
 
     public enum Type {
         STORED, PUTCHUNK, DELETE, GETCHUNK, CHUNK, REMOVED, JOINED, // first project types
-        SUCCESSOR, PREDECESSOR
+        SUCCESSOR, PREDECESSOR, KEY
     }
 
-    public String createHeader(Type type, String nodeID, String address, String[] args) {
+    public static byte[] createHeader(Type type, String address, String[] args) {
         switch (type) {
-        case SUCCESSOR:
-            return type + " " + nodeID + " " + address;
+        case KEY:
+        case PREDECESSOR:
+            return (type + " " + address).getBytes();
+
         default:
-            return "ERROR";
+            throw new IllegalArgumentException("Invalid message type for the request: " + type);
         }
     }
 
-    public static SSLSocket makeConnection(String address, int port) throws IOException {
-        SSLSocketFactory sslSocketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
-        SSLSocket sslSocket = (SSLSocket) sslSocketFactory.createSocket(address, port);
+    public static byte[] createRequest(Type type, String address) {
 
-        sslSocket.setEnabledCipherSuites(sslSocket.getSupportedCipherSuites());
+        return createHeader(type, address, null);
+    }
 
-        return sslSocket;
+    public static String[] parseResponse(byte[] response) {
+        return new String(response).trim().split("\\s+");
     }
 
     // public String createHeader(String messageType, String fileID, int
