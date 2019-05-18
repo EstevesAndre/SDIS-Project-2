@@ -13,6 +13,6 @@ Distributed Backup Service for the Internet
 
 ### Run
 
-java -Djavax.net.ssl.keyStore=SDIS -Djavax.net.ssl.keyStorePassword=123456 Server
+java -Djavax.net.ssl.keyStore=keystore -Djavax.net.ssl.keyStorePassword=123456 service/Peer $@
 
-java -Djavax.net.ssl.trustStore=truststore -Djavax.net.ssl.trustStorePassword=123456 Client
+java -Djavax.net.ssl.trustStore=truststore -Djavax.net.ssl.trustStorePassword=123456 service/TestApp $@
