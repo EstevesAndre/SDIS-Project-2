@@ -6,9 +6,11 @@ import java.util.HashMap;
 
 import javax.net.ssl.SSLSocket;
 
+import threads.CheckPredecessor;
+import threads.CheckSuccessor;
 import threads.Listener;
 import handlers.IOManager;
-import handlers.MessageManager;
+import handlers.RequestManager;
 
 public class ChordNode {
 
@@ -46,7 +48,7 @@ public class ChordNode {
         this.initialize();
     }
 
-    private void initialize() {
+    private void initialize() throws Exception {
         System.out.println("Chord node:\n - Address -> " + address + "\n - Port -> " + port);
 
         fingers = new HashMap<Integer, Finger>(FINGERS_SIZE);
@@ -73,7 +75,7 @@ public class ChordNode {
         this.predecessor = newPredecessor;
     }
 
-    public String getId() {
+    public String getID() {
         return ID;
     }
 
@@ -90,7 +92,7 @@ public class ChordNode {
         System.setProperty("javax.net.ssl.trustStore", "truststore");
     }
 
-    private void initializeFingers() {
+    private void initializeFingers() throws Exception {
 
         if (this.existingChordNode == null) { // first node
             for (int i = 0; i < FINGERS_SIZE; i++)
@@ -121,7 +123,7 @@ public class ChordNode {
             SSLSocket socket = null;
 
             try {
-                socket = MessageManager.makeConnection(this.existingNodeAddress, this.existingNodePort);
+                socket = RequestManager.makeConnection(this.existingNodeAddress, this.existingNodePort);
 
                 ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
                 output.writeObject("CARALHOOOO".getBytes());
@@ -136,7 +138,8 @@ public class ChordNode {
 
     private void initializeThreads() {
         new Thread(new Listener(this)).start();
-        // new Thread(new )
+        new Thread(new CheckPredecessor(this, 5000)).start();
+        new Thread(new CheckSuccessor(this, 2000)).start();
     }
 
 }
