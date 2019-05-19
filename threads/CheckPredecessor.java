@@ -37,7 +37,7 @@ public class CheckPredecessor extends Thread {
         }
 
         byte[] request = MessageManager.createHeader(MessageManager.Type.KEY, chordNode.getAddress(), null);
-        byte[] response = RequestManager.sendRequest(predecessor, request);
+        byte[] response = RequestManager.sendRequest(predecessor.getAddress(), predecessor.getPort(), request);
         String key = MessageManager.parseResponse(response)[1];
 
         if (response == null)

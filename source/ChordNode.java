@@ -1,6 +1,7 @@
 package source;
 
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.HashMap;
 
@@ -10,15 +11,14 @@ import threads.CheckPredecessor;
 import threads.CheckSuccessor;
 import threads.Listener;
 import handlers.IOManager;
+import handlers.MessageManager;
 import handlers.RequestManager;
 
 public class ChordNode {
 
-    private static final int FINGERS_SIZE = 32;
+    private static final int FINGERS_SIZE = 8;
 
-    private final String ID;
-    private final String address;
-    private final int port;
+    private final Finger ID;
     private String existingChordNode;
     private String existingNodeAddress;
     private int existingNodePort;
@@ -29,27 +29,26 @@ public class ChordNode {
     private final static char[] hexArray = "0123456789ABCDEF".toCharArray();
 
     public ChordNode(String address, String port) throws Exception {
-        this.address = address;
-        this.ID = IOManager.getAddressHashID(address + '_' + port);
-        this.port = Integer.valueOf(port);
+        this.ID = new Finger(address, Integer.parseInt(port));
         existingChordNode = null;
 
         this.initialize();
     }
 
     public ChordNode(String address, String port, String existingAddress, String existingPort) throws Exception {
-        this.address = address;
-        this.ID = IOManager.getAddressHashID(address + '_' + port);
-        this.port = Integer.valueOf(port);
+        this.ID = new Finger(address, Integer.parseInt(port));
         this.existingNodeAddress = existingAddress;
         this.existingNodePort = Integer.valueOf(existingPort);
         this.existingChordNode = IOManager.getAddressHashID(existingAddress + '_' + existingPort);
+
+        if (this.ID.getID().equals(this.existingChordNode))
+            throw new IllegalArgumentException("Existing ID is equal to new chord node... Attemp failed!");
 
         this.initialize();
     }
 
     private void initialize() throws Exception {
-        System.out.println("Chord node:\n - Address -> " + address + "\n - Port -> " + port);
+        System.out.println("Chord node:\n - Address -> " + this.ID.getAddress() + "\n - Port -> " + this.ID.getPort());
 
         fingers = new HashMap<Integer, Finger>(FINGERS_SIZE);
         initiateSystemConfigs();
@@ -75,16 +74,16 @@ public class ChordNode {
         this.predecessor = newPredecessor;
     }
 
-    public String getID() {
-        return ID;
+    public Finger getID() {
+        return this.ID;
     }
 
     public String getAddress() {
-        return address;
+        return this.ID.getAddress();
     }
 
     public int getPort() {
-        return port;
+        return this.ID.getPort();
     }
 
     private void initiateSystemConfigs() {
@@ -96,42 +95,33 @@ public class ChordNode {
 
         if (this.existingChordNode == null) { // first node
             for (int i = 0; i < FINGERS_SIZE; i++)
-                this.fingers.put(i, new Finger(this.address, this.port));
+                this.fingers.put(i, new Finger(this.ID.getAddress(), this.ID.getPort()));
         } else {
             // join node to ring
-            // TODO
+            System.out.println("Joining node " + this.existingChordNode);
+
+            for (int i = 0; i < FINGERS_SIZE; i++) {
+                System.out.println("Find " + i + "º finger!");
+                byte[] request = MessageManager.createHeader(MessageManager.Type.SUCCESSOR, this.ID.getID(),
+                        new String[] { this.getAddress(), String.valueOf(this.getPort()) });
+
+                byte[] response = RequestManager.sendRequest(this.existingNodeAddress, this.existingNodePort, request);
+                // [SUCCESSOR ID ADDRESS PORT]
+                String[] parts = MessageManager.parseResponse(response);
+                this.fingers.put(i, new Finger(parts[2], parts[3]));
+
+                System.out.println("Received " + new String(response));
+            }
         }
 
         System.out.println("Finger table created");
     }
 
     private void initializeSuccessors() {
+        this.predecessor = this.fingers.get(0); // first
+        this.successor = this.fingers.get(0); // first
 
-        if (this.existingChordNode == null) {
-            // first node
-            this.predecessor = this.fingers.get(0); // first
-            this.successor = this.fingers.get(0); // first
-
-        } else {
-            // join node to ring on existingChordNode given
-            if (this.address.equals(this.existingChordNode)) {
-                System.out.println("Wrong request, successor of himself");
-                return;
-            }
-
-            System.out.println("Joining node " + this.existingChordNode);
-            SSLSocket socket = null;
-
-            try {
-                socket = RequestManager.makeConnection(this.existingNodeAddress, this.existingNodePort);
-
-                ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
-                output.writeObject("CARALHOOOO".getBytes());
-                socket.close();
-
-            } catch (IOException e) {
-                throw new RuntimeException("Failed connecting to server socket.", e);
-            }
+        if (!this.ID.equals(this.getSuccessor())) {
 
         }
     }
@@ -142,4 +132,81 @@ public class ChordNode {
         new Thread(new CheckSuccessor(this, 2000)).start();
     }
 
+    public void notifySuccessor() {
+        if (this.getSuccessor().equals(this.ID))
+            return;
+
+        byte[] request = MessageManager.createHeader(MessageManager.Type.YOUR_PREDECESSOR, this.getID().getID(),
+                new String[] { this.getAddress(), String.valueOf(this.getPort()) });
+        byte[] response = RequestManager.sendRequest(this.getSuccessor().getAddress(), this.getSuccessor().getPort(),
+                request);
+        String isOK = new String(response);
+        if (!isOK.equals("OK"))
+            System.out.println("ERROR OCCURRED");
+    }
+
+    public byte[] handlePredecessorRequest(String[] received) {
+        if (predecessor == null)
+            return MessageManager.createHeader(MessageManager.Type.PREDECESSOR, "ERROR", null);
+        else
+            return MessageManager.createHeader(MessageManager.Type.PREDECESSOR, predecessor.getID(),
+                    new String[] { predecessor.getAddress(), String.valueOf(predecessor.getPort()) });
+    }
+
+    public byte[] handleYourPredecessorRequest(String[] received) {
+        // [YOUR_PREDECESSOR ID ADDRESS PORT]
+
+        System.out.println("Notified by " + received[1]);
+
+        Finger potential = null;
+        try {
+            potential = new Finger(received[2], received[3]);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        if (this.predecessor == null) {
+            this.predecessor = potential;
+        }
+
+        if (potential.comparator(predecessor, this.ID)) {
+            this.predecessor = potential;
+        }
+
+        return MessageManager.createHeader(MessageManager.Type.OK, null, null);
+    }
+
+    public byte[] handleSuccessorRequest(String[] received) {
+
+        if (received.length != 4)
+            return MessageManager.createHeader(MessageManager.Type.ERROR, null, null);
+
+        Finger looking = null;
+        try {
+            looking = new Finger(received[2], received[3]);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        Finger ret = findSuccessor(looking);
+
+        if (ret == null)
+            return MessageManager.createHeader(MessageManager.Type.ERROR, null, null);
+        else
+            return MessageManager.createHeader(MessageManager.Type.SUCCESSOR, ret.getID(),
+                    new String[] { ret.getAddress(), String.valueOf(ret.getPort()) });
+    }
+
+    private Finger findSuccessor(Finger finger) {
+        // if given finger is between this ID and his sucessor
+        if (finger.comparator(this.ID, successor))
+            return successor;
+
+        for (int i = fingers.size() - 1; i > 0; i--) {
+            Finger aux = fingers.get(i);
+            if (aux != null && aux.comparator(this.ID, finger))
+                return aux;
+        }
+        return ID;
+    }
 }

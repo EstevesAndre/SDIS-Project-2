@@ -14,6 +14,10 @@ public class Finger {
         this.ID = IOManager.getAddressHashID(address + '_' + port);
     }
 
+    public Finger(String address, String port) throws Exception {
+        this(address, Integer.parseInt(port));
+    }
+
     public String getID() {
         return ID;
     }
@@ -24,5 +28,19 @@ public class Finger {
 
     public int getPort() {
         return port;
+    }
+
+    // return true if finger is betweem left and right, false otherwise
+    public boolean comparator(Finger left, Finger right) {
+
+        if (left.getID().compareTo(right.getID()) < 0) // left < right
+            return ID.compareTo(left.getID()) > 0 // this > left
+                    && ID.compareTo(right.getID()) <= 0; // this <= right
+        else
+            return ID.compareTo(left.getID()) > 0 || ID.compareTo(right.getID()) <= 0;
+    }
+
+    public boolean equals(Finger f2) {
+        return ID.equals(f2.getID());
     }
 }

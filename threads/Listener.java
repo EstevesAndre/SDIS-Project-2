@@ -39,7 +39,6 @@ public class Listener implements Runnable {
             while (true) {
                 System.out.println("I'm listening...");
                 sslSocket = (SSLSocket) this.sslServerSocket.accept();
-                System.out.println("> Received connection");
                 new Thread(new Request(this.node, sslSocket)).start();
             }
         } catch (IOException e) {

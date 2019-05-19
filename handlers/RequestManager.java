@@ -24,11 +24,11 @@ public abstract class RequestManager {
         return sslSocket;
     }
 
-    private static SSLSocket send(Finger node, byte[] request) {
+    private static SSLSocket send(String IPAddress, int IPPort, byte[] request) {
 
         SSLSocket socket = null;
         try {
-            socket = makeConnection(node.getAddress(), node.getPort());
+            socket = makeConnection(IPAddress, IPPort);
             ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
             output.writeObject(request);
         } catch (IOException e) {
@@ -38,9 +38,9 @@ public abstract class RequestManager {
         return socket;
     }
 
-    public static byte[] sendRequest(Finger predecessor, byte[] request) {
+    public static byte[] sendRequest(String IPAddress, int IPPort, byte[] request) {
 
-        SSLSocket socket = send(predecessor, request);
+        SSLSocket socket = send(IPAddress, IPPort, request);
         byte[] response = null;
 
         try {
@@ -88,9 +88,13 @@ public abstract class RequestManager {
 
         switch (received[0]) {
         case "KEY":
-            return MessageManager.createHeader(MessageManager.Type.KEY, node.getID(), null);
+            return MessageManager.createHeader(MessageManager.Type.KEY, node.getID().getID(), null);
         case "PREDECESSOR":
-            return MessageManager.createHeader(MessageManager.Type.PREDECESSOR, node.getPredecessor().getID(), null);
+            return node.handlePredecessorRequest(received);
+        case "SUCCESSOR":
+            return node.handleSuccessorRequest(received);
+        case "YOUR_PREDECESSOR":
+            return node.handleYourPredecessorRequest(received);
         default:
             throw new IllegalArgumentException("Invalid message type for the request: " + received[0]);
         }

@@ -6,15 +6,24 @@ public abstract class MessageManager {
 
     public enum Type {
         STORED, PUTCHUNK, DELETE, GETCHUNK, CHUNK, REMOVED, JOINED, // first project types
-        SUCCESSOR, PREDECESSOR, KEY
+        SUCCESSOR, PREDECESSOR, KEY, YOUR_PREDECESSOR, OK, ERROR
     }
 
-    public static byte[] createHeader(Type type, String address, String[] args) {
+    public static byte[] createHeader(Type type, String nodeID, String[] args) {
         switch (type) {
         case KEY:
+            return (type + " " + nodeID).getBytes();
         case PREDECESSOR:
-            return (type + " " + address).getBytes();
-
+            if (args == null)
+                return (type + " " + nodeID).getBytes();
+            else
+                return (type + " " + nodeID + " " + args[0] + " " + args[1]).getBytes();
+        case YOUR_PREDECESSOR:
+            return (type + " " + nodeID + " " + args[0] + " " + args[1]).getBytes();
+        case SUCCESSOR:
+            return (type + " " + nodeID + " " + args[0] + " " + args[1]).getBytes();
+        case OK:
+            return "OK".getBytes();
         default:
             throw new IllegalArgumentException("Invalid message type for the request: " + type);
         }
