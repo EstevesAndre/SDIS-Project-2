@@ -52,9 +52,11 @@ public class ChordNode {
      */
     private Finger predecessor;
 
+    public int nextFingerToFix;
+
     /**
      * Constructor of the first chord node to enter the ring (starting node)
-     * 
+     *
      * @param address Address of the machine
      * @param port    Port to comunicate
      * @throws Exception
@@ -66,9 +68,17 @@ public class ChordNode {
         this.initialize();
     }
 
+    public Finger getIthFinger(int i){
+        return fingers.get(i);
+    }
+
+    public HashMap<Integer, Finger> getFingers(){
+      return fingers;
+    }
+
     /**
      * Construtor of the next nodes to enter the ring given the existing node
-     * 
+     *
      * @param address         Address of the machine
      * @param port            Port to comunicate
      * @param existingAddress Exisiting address to comunicate
@@ -90,7 +100,7 @@ public class ChordNode {
     /**
      * Initial function to start up the class Creates finger table - Initiate system
      * configs - Initiate sucessors - Initiate and Start threads
-     * 
+     *
      * @throws Exception
      */
     private void initialize() throws Exception {
@@ -105,7 +115,7 @@ public class ChordNode {
     }
 
     /**
-     * 
+     *
      * @return (Finger) sucessor
      */
     public Finger getSuccessor() {
@@ -114,7 +124,7 @@ public class ChordNode {
 
     /**
      * Sets the successor
-     * 
+     *
      * @param newSuccessor Next Successor
      */
     public void setSuccessor(Finger newSuccessor) {
@@ -122,7 +132,7 @@ public class ChordNode {
     }
 
     /**
-     * 
+     *
      * @return (Finger) predecessor
      */
     public Finger getPredecessor() {
@@ -131,7 +141,7 @@ public class ChordNode {
 
     /**
      * Sets the predecessor
-     * 
+     *
      * @param newPredecessor Next predecessor
      */
     public void setPredecessor(Finger newPredecessor) {
@@ -139,7 +149,7 @@ public class ChordNode {
     }
 
     /**
-     * 
+     *
      * @return (Finger) Unique Identifier
      */
     public Finger getID() {
@@ -147,7 +157,7 @@ public class ChordNode {
     }
 
     /**
-     * 
+     *
      * @return Unique Identifier address
      */
     public String getAddress() {
@@ -155,7 +165,7 @@ public class ChordNode {
     }
 
     /**
-     * 
+     *
      * @return Unique Identifier port
      */
     public int getPort() {
@@ -173,7 +183,7 @@ public class ChordNode {
     /**
      * Initialize fingers If first node, all fingers are equal this Otherwise sends
      * requests to the existing node to get the successor
-     * 
+     *
      * @throws Exception
      */
     private void initializeFingers() throws Exception {
@@ -241,7 +251,7 @@ public class ChordNode {
 
     /**
      * Handle PREDECESSOR request
-     * 
+     *
      * @param received arguments received
      * @return message with the response, nodeID, nodeAddress and nodePort
      */
@@ -255,7 +265,7 @@ public class ChordNode {
 
     /**
      * Handle YOUR_PREDECESSOR request
-     * 
+     *
      * @param received arguments received
      * @return message with the response, OK
      */
@@ -284,7 +294,7 @@ public class ChordNode {
 
     /**
      * Handle SUCCESSOR request
-     * 
+     *
      * @param received arguments received
      * @return message with ERROR or Successor, ID, Address and Port
      */
@@ -311,7 +321,7 @@ public class ChordNode {
 
     /**
      * Finds the successor of finger request
-     * 
+     *
      * @param finger Finger to find his successor
      * @return found successor
      */
