@@ -6,6 +6,10 @@ import java.util.AbstractMap;
 import java.util.Arrays;
 
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.security.MessageDigest;
 
 import java.io.File;
@@ -145,5 +149,16 @@ public class IOManager implements java.io.Serializable {
             hexChars[j * 2 + 1] = hexArray[v & 0x0F];
         }
         return new String(hexChars);
+    }
+
+    public static String getFileHashID(String path) throws Exception {
+        File file = new File(path);
+        Path p = Paths.get(file.getAbsolutePath());
+
+        BasicFileAttributes attr = Files.readAttributes(p, BasicFileAttributes.class);
+        MessageDigest digest = MessageDigest.getInstance("SHA-1");
+        String toHash = file.getName() + attr.creationTime().toString() + attr.lastModifiedTime().toString();
+
+        return bytesToHex(digest.digest(toHash.getBytes(StandardCharsets.UTF_8)));
     }
 }
