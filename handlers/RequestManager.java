@@ -95,9 +95,45 @@ public abstract class RequestManager {
             return node.handleSuccessorRequest(received);
         case "YOUR_PREDECESSOR":
             return node.handleYourPredecessorRequest(received);
+        case "BACKUP":
+            return node.handleBackupRequest();
+        case "BACKUPNH":
+            return node.handleBackupNhRequest();
+        case "RESTORE":
+            return node.handleRestoreRequest();
+        case "DELETE":
+            return node.handleDeleteRequest();
+        case "DELETENH":
+            return node.handleDeleteNhRequest();
+        case "RECLAIM":
+            return node.handleReclaimRequest();
+        case "STATE":
+            return node.handleStateRequest();
         default:
             throw new IllegalArgumentException("Invalid message type for the request: " + received[0]);
         }
+    }
 
+    public static void backupRequest(String address, String port, String path, String rd) {
+        // prepare request
+
+    }
+
+    public static void backupNhRequest(String address, String port, String path, String rd) {
+    }
+
+    public static void restoreRequest(String address, String port, String path) {
+    }
+
+    public static void deleteRequest(String address, String port, String path) {
+    }
+
+    public static void deleteNhRequest(String address, String port, String path) {
+    }
+
+    public static void reclaimRequest(String address, String port, String path) {
+    }
+
+    public static void stateRequest(String address, String port, String option) {
     }
 }

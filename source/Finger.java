@@ -30,7 +30,12 @@ public class Finger {
         return port;
     }
 
-    // return true if finger is betweem left and right, false otherwise
+    /**
+     * 
+     * @param left  Left Finger to compare
+     * @param right Right Finger to compare
+     * @return true if finger is betweem left and right, false otherwise
+     */
     public boolean comparator(Finger left, Finger right) {
 
         if (left.getID().compareTo(right.getID()) < 0) // left < right
@@ -40,6 +45,11 @@ public class Finger {
             return ID.compareTo(left.getID()) > 0 || ID.compareTo(right.getID()) <= 0;
     }
 
+    /**
+     * 
+     * @param f2 Finger to be compared
+     * @return true if this finger is equal to f2, false otherwise
+     */
     public boolean equals(Finger f2) {
         return ID.equals(f2.getID());
     }
