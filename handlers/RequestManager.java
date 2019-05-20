@@ -4,12 +4,12 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
 import source.ChordNode;
-import source.Finger;
 
 // Class used to send and receive messages
 
@@ -20,6 +20,7 @@ public abstract class RequestManager {
         SSLSocket sslSocket = (SSLSocket) sslSocketFactory.createSocket(address, port);
 
         sslSocket.setEnabledCipherSuites(sslSocket.getSupportedCipherSuites());
+        System.out.println("CONNECTED");
 
         return sslSocket;
     }
@@ -114,23 +115,38 @@ public abstract class RequestManager {
         }
     }
 
-    public static void backupRequest(String address, String port, String path, String rd) {
+    public static void backupRequest(String address, String port, String path, String repDegree) {
         // prepare request
         // using java NIO to open file and create chunks
-        String fileID = "test.txt";
 
-        // byte[] header = MessageManager
-        // .createApplicationHeader(MessageManager.Type.PUTCHUNK, fileID, 1,
-        // Integer.parseInt(rd)).getBytes();
-        // byte[] putChunk = new byte[header.length + chunk.getSize()];
-        // System.arraycopy(header, 0, putChunk, 0, header.length);
-        // System.arraycopy(chunk.getContent(), 0, putChunk, header.length,
-        // chunk.getSize());
+        int rd = Integer.parseInt(repDegree);
 
-        // byte[] request = MessageManager.createHeader(MessageManager.Type.PUTCHUNK,
-        // null, null);
-        // byte[] response = RequestManager.sendRequest(address, Integer.parseInt(port),
-        // request);
+        String fileID = null;
+        ArrayList<Chunk> chunks = null;
+        try {
+            fileID = IOManager.getFileHashID(path);
+            chunks = IOManager.splitFile(fileID, path, rd);
+        } catch (Exception e1) {
+            e1.printStackTrace();
+        }
+        System.out.println("Splited file");
+
+        for (int i = 0; i < chunks.size(); i++) {
+            byte[] header = MessageManager.createApplicationHeader(MessageManager.Type.PUTCHUNK, fileID,
+                    chunks.get(i).getId(), rd);
+            byte[] putChunk = new byte[header.length + chunks.get(i).getSize()];
+            System.arraycopy(header, 0, putChunk, 0, header.length);
+            System.arraycopy(chunks.get(i).getContent(), 0, putChunk, header.length, chunks.get(i).getSize());
+
+            byte[] response = RequestManager.sendRequest(address, Integer.parseInt(port), putChunk);
+            System.out.println("STORED " + (new String(response)));
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        System.out.println("FINISHED BACKUP");
     }
 
     public static void backupNhRequest(String address, String port, String path, String rd) {

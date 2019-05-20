@@ -1,6 +1,6 @@
 package service;
 
-import java.util.ArrayList;
+import java.security.InvalidParameterException;
 
 import handlers.RequestManager;
 
@@ -19,6 +19,9 @@ public class TestApp {
         this.operation = args[2];
         this.op1 = args[3];
         this.op2 = (args.length == 5) ? args[4] : null;
+        if (this.operation.equals("BACKUP") && args.length == 4)
+            throw new InvalidParameterException("Backup operation must have 5 arguments");
+
     }
 
     // Usage: java -Djavax.net.ssl.trustStore=truststore
@@ -75,6 +78,7 @@ public class TestApp {
             }
         } catch (Exception e) {
             System.err.println("ERROR --> " + this.getClass() + ": File not found!");
+            e.printStackTrace();
             System.exit(-2);
         }
     }

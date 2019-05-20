@@ -40,8 +40,8 @@ public abstract class MessageManager {
         return new String(response).trim().split("\\s+");
     }
 
-    public String createApplicationHeader(Type type, String fileID, int chunkNumber, int replicationDegree) {
-        return type + " " + fileID + " " + chunkNumber + " " + replicationDegree + "\r\n\r\n";
+    public static byte[] createApplicationHeader(Type type, String fileID, int chunkNumber, int replicationDegree) {
+        return (type + " " + fileID + " " + chunkNumber + " " + replicationDegree + "\r\n\r\n").getBytes();
     }
 
     // public String createHeader(String messageType, String fileID, int
