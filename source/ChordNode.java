@@ -1,5 +1,6 @@
 package source;
 
+import java.util.Arrays;
 import java.util.HashMap;
 
 import threads.CheckPredecessor;
@@ -68,12 +69,12 @@ public class ChordNode {
         this.initialize();
     }
 
-    public Finger getIthFinger(int i){
+    public Finger getIthFinger(int i) {
         return fingers.get(i);
     }
 
-    public HashMap<Integer, Finger> getFingers(){
-      return fingers;
+    public HashMap<Integer, Finger> getFingers() {
+        return fingers;
     }
 
     /**
@@ -341,8 +342,24 @@ public class ChordNode {
         return ID;
     }
 
-    public byte[] handleBackupRequest() {
-        return "OK".getBytes();
+    public byte[] handlePutchunkRequest(byte[] content) {
+
+        // store chunk here
+        int splitIndex = 0;
+        for (int i = 0; i < content.length; i++) {
+            if (content[i] == 13) {
+                splitIndex = i + 4;
+                break;
+            }
+        }
+
+        byte[] chunkcontent = Arrays.copyOfRange(content, splitIndex, content.length);
+        String[] received = new String(content, 0, splitIndex).trim().split("\\s+");
+
+        // TODO: stores chunkcontent
+
+        return MessageManager.createApplicationHeader(MessageManager.Type.STORED, received[1],
+                Integer.parseInt(received[2]), 0);
     }
 
     public byte[] handleBackupNhRequest() {

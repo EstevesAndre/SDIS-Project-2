@@ -20,7 +20,6 @@ public abstract class RequestManager {
         SSLSocket sslSocket = (SSLSocket) sslSocketFactory.createSocket(address, port);
 
         sslSocket.setEnabledCipherSuites(sslSocket.getSupportedCipherSuites());
-        System.out.println("CONNECTED");
 
         return sslSocket;
     }
@@ -96,8 +95,8 @@ public abstract class RequestManager {
             return node.handleSuccessorRequest(received);
         case "YOUR_PREDECESSOR":
             return node.handleYourPredecessorRequest(received);
-        case "BACKUP":
-            return node.handleBackupRequest();
+        case "PUTCHUNK":
+            return node.handlePutchunkRequest(request);
         case "BACKUPNH":
             return node.handleBackupNhRequest();
         case "RESTORE":
@@ -139,14 +138,14 @@ public abstract class RequestManager {
             System.arraycopy(chunks.get(i).getContent(), 0, putChunk, header.length, chunks.get(i).getSize());
 
             byte[] response = RequestManager.sendRequest(address, Integer.parseInt(port), putChunk);
-            System.out.println("STORED " + (new String(response)));
+            System.out.println(new String(response));
             try {
                 Thread.sleep(50);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
-        System.out.println("FINISHED BACKUP");
+        System.out.println("Finished BACKUP");
     }
 
     public static void backupNhRequest(String address, String port, String path, String rd) {
