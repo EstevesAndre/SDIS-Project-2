@@ -116,7 +116,21 @@ public abstract class RequestManager {
 
     public static void backupRequest(String address, String port, String path, String rd) {
         // prepare request
+        // using java NIO to open file and create chunks
+        String fileID = "test.txt";
 
+        // byte[] header = MessageManager
+        // .createApplicationHeader(MessageManager.Type.PUTCHUNK, fileID, 1,
+        // Integer.parseInt(rd)).getBytes();
+        // byte[] putChunk = new byte[header.length + chunk.getSize()];
+        // System.arraycopy(header, 0, putChunk, 0, header.length);
+        // System.arraycopy(chunk.getContent(), 0, putChunk, header.length,
+        // chunk.getSize());
+
+        // byte[] request = MessageManager.createHeader(MessageManager.Type.PUTCHUNK,
+        // null, null);
+        // byte[] response = RequestManager.sendRequest(address, Integer.parseInt(port),
+        // request);
     }
 
     public static void backupNhRequest(String address, String port, String path, String rd) {

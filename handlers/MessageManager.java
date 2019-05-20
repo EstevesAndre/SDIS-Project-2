@@ -24,6 +24,8 @@ public abstract class MessageManager {
             return (type + " " + nodeID + " " + args[0] + " " + args[1]).getBytes();
         case OK:
             return "OK".getBytes();
+        case PUTCHUNK:
+            return (type + " " + " ").getBytes();
         default:
             throw new IllegalArgumentException("Invalid message type for the request: " + type);
         }
@@ -38,12 +40,9 @@ public abstract class MessageManager {
         return new String(response).trim().split("\\s+");
     }
 
-    // public String createHeader(String messageType, String fileID, int
-    // chunkNumber, int replicationDegree) {
-    // return messageType + " " + this.version + " " + this.peerID + " " + fileID +
-    // " " + chunkNumber + " "
-    // + replicationDegree + "\r\n\r\n";
-    // }
+    public String createApplicationHeader(Type type, String fileID, int chunkNumber, int replicationDegree) {
+        return type + " " + fileID + " " + chunkNumber + " " + replicationDegree + "\r\n\r\n";
+    }
 
     // public String createHeader(String messageType, String fileID, int
     // chunkNumber) {

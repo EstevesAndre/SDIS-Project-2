@@ -43,6 +43,7 @@ public class TestApp {
     }
 
     private void invokeRequest() throws Exception {
+
         try {
             switch (this.operation) {
             case "BACKUP":
