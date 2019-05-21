@@ -28,25 +28,30 @@ public class CheckPredecessor extends Thread {
 
     @Override
     public void run() {
-        System.out.println("Checking predecessor...");
         Finger predecessor = chordNode.getPredecessor();
 
         if (predecessor == null) {
-            System.out.println("Predecessor's not set for " + chordNode.getID());
+            System.out.println("Predecessor's not set for " + chordNode.getKey().getID());
+            return;
+        } else if (predecessor.getID() == chordNode.getKey().getID()) {
+            System.out.println("I'm my own predecessor, with ID " + chordNode.getKey().getID());
             return;
         }
+        System.out.println("My current predecessor is " + predecessor.getID());
 
-        byte[] request = MessageManager.createHeader(MessageManager.Type.KEY, chordNode.getAddress(), null);
+        byte[] request = MessageManager.createHeader(MessageManager.Type.KEY, chordNode.getKey().getID(), null);
         byte[] response = RequestManager.sendRequest(predecessor.getAddress(), predecessor.getPort(), request);
-        String key = MessageManager.parseResponse(response)[1];
 
-        if (response == null)
+        if (response == null) {
+            System.out.println("Predecessor is now dead!");
             chordNode.setPredecessor(null);
-        else if (key.equals(predecessor.getID()))
+            return;
+        }
+        String key = MessageManager.parseResponse(response)[1];
+        if (Integer.parseInt(key) == predecessor.getID())
             System.out.println("Predecessor is still alive!!");
         else
             System.err.println("Found predecessor with invalid key");
-
     }
 
     public void terminate() {

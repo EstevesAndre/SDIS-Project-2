@@ -29,25 +29,24 @@ public class CheckSuccessor extends Thread {
     @Override
     public void run() {
         Finger successor = chordNode.getSuccessor();
-
         if (successor == null) {
-            System.out.println("Successor's not set for " + chordNode.getID().getID());
+            // System.out.println("Successor's not set for " + chordNode.getKey().getID());
             return;
         }
 
-        if (successor.equals(chordNode.getID())) {
-            System.out.println("My successor is myself!");
+        if (successor.equals(chordNode.getKey())) {
+            // System.out.println("My successor is myself!");
             return;
         }
 
         // resquests for the predecessor of my successor
-        byte[] request = MessageManager.createHeader(MessageManager.Type.PREDECESSOR, chordNode.getAddress(), null);
+        byte[] request = MessageManager.createHeader(MessageManager.Type.PREDECESSOR, chordNode.getKey().getID(), null);
         byte[] response = RequestManager.sendRequest(successor.getAddress(), successor.getPort(), request);
 
         String[] splited = MessageManager.parseResponse(response);
         // [PREDECESSOR, (ID, Address, Port) | ERROR]
 
-        if (splited[1].equals("ERROR")) {
+        if (splited[0].equals("ERROR")) {
             System.out.println("Predecessor of my sucessor is not set!");
             return;
         }
@@ -62,12 +61,12 @@ public class CheckSuccessor extends Thread {
             e.printStackTrace();
         }
 
-        if (newCandidate.comparator(chordNode.getID(), successor)) {
+        if (newCandidate.comparator(chordNode.getKey(), successor)) {
             chordNode.setSuccessor(newCandidate);
         }
 
-        chordNode.notifySuccessor();
-        System.out.println("My successor is " + newCandidate.getID());
+        // chordNode.notifySuccessor();
+        // System.out.println("My successor is " + newCandidate.getID());
     }
 
     public void terminate() {

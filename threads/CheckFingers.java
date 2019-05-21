@@ -28,17 +28,21 @@ public class CheckFingers extends Thread {
 
     @Override
     public void run() {
-      System.out.println("Fixing fingers...");
-    /*int i = chordNode.nextFingerToFix;
-      Finger edit = chordNode.findSuccessor(chordNode.getIthFinger(chordNode.getID().getID() + (int)Math.pow(2,i)));
-      int successorId = edit.getID();
-      if (successorId != -1) {
-        if (successorId != chordNode.getFingers().get(i).getID()) {
-            chordNode.getFingers().put(i,edit);
+        System.out.println("Fixing fingers...");
+
+        int i = chordNode.nextFingerToFix;
+
+        Finger edit = chordNode
+                .findSuccessor(chordNode.getIthFinger(((int) chordNode.getKey().getID() + (int) Math.pow(2, i)) % 32));
+        long successorId = edit.getID();
+
+        if (successorId != -1) {
+            if (successorId != chordNode.getFingers().get(i).getID()) {
+                chordNode.getFingers().put(i, edit);
+            }
+            chordNode.nextFingerToFix = (i + 1) % 32; // replace with bit_num
         }
-        chordNode.nextFingerToFix = (i + 1) % 32; //replace with bit_num
-      }
-*/
+
     }
 
     public void terminate() {

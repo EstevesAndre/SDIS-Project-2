@@ -18,7 +18,7 @@ public abstract class RequestManager {
     public static SSLSocket makeConnection(String address, int port) throws IOException {
         SSLSocketFactory sslSocketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
         SSLSocket sslSocket = (SSLSocket) sslSocketFactory.createSocket(address, port);
-
+        sslSocket.setSoTimeout(2000);
         sslSocket.setEnabledCipherSuites(sslSocket.getSupportedCipherSuites());
 
         return sslSocket;
@@ -29,10 +29,12 @@ public abstract class RequestManager {
         SSLSocket socket = null;
         try {
             socket = makeConnection(IPAddress, IPPort);
+            if (!socket.isConnected())
+                return null;
             ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
             output.writeObject(request);
         } catch (IOException e) {
-            e.printStackTrace();
+            // e.printStackTrace();
         }
 
         return socket;
@@ -41,17 +43,21 @@ public abstract class RequestManager {
     public static byte[] sendRequest(String IPAddress, int IPPort, byte[] request) {
 
         SSLSocket socket = send(IPAddress, IPPort, request);
+        if (socket == null)
+            return null;
+
         byte[] response = null;
 
         try {
             Thread.sleep(50);
+
             response = getResponse(socket);
             socket.close();
 
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            // e.printStackTrace();
         } catch (IOException e) {
-            e.printStackTrace();
+            // e.printStackTrace();
         }
 
         return response;
@@ -63,9 +69,9 @@ public abstract class RequestManager {
             ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
             return (byte[]) input.readObject();
         } catch (IOException e) {
-            e.printStackTrace();
+            // e.printStackTrace();
         } catch (ClassNotFoundException e) {
-            e.printStackTrace();
+            // e.printStackTrace();
         }
 
         return null;
@@ -88,7 +94,7 @@ public abstract class RequestManager {
 
         switch (received[0]) {
         case "KEY":
-            return MessageManager.createHeader(MessageManager.Type.KEY, node.getID().getID(), null);
+            return MessageManager.createHeader(MessageManager.Type.KEY, node.getKey().getID(), null);
         case "PREDECESSOR":
             return node.handlePredecessorRequest(received);
         case "SUCCESSOR":

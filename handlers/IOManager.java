@@ -124,7 +124,7 @@ public class IOManager implements java.io.Serializable {
         }
     }
 
-    public static String getAddressHashID(String toHash) throws Exception {
+    public static long getAddressHashID(String toHash) throws Exception {
         MessageDigest digest;
         String hashed = "";
 
@@ -138,7 +138,7 @@ public class IOManager implements java.io.Serializable {
             e.printStackTrace();
         }
 
-        return hashed;
+        return ((int) hashed.hashCode() & 0x00000000ffffffffL);
     }
 
     public static String bytesToHex(byte[] bytes) throws Exception {

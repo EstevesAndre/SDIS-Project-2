@@ -4,21 +4,21 @@ import handlers.IOManager;
 
 public class Finger {
 
-    private String ID;
+    private long ID;
     private String address;
     private int port;
 
     public Finger(String address, int port) throws Exception {
         this.address = address;
         this.port = port;
-        this.ID = IOManager.getAddressHashID(address + '_' + port);
+        this.ID = IOManager.getAddressHashID(address + '_' + port) % (int) Math.pow(2, 32);
     }
 
     public Finger(String address, String port) throws Exception {
         this(address, Integer.parseInt(port));
     }
 
-    public String getID() {
+    public long getID() {
         return ID;
     }
 
@@ -38,11 +38,10 @@ public class Finger {
      */
     public boolean comparator(Finger left, Finger right) {
 
-        if (left.getID().compareTo(right.getID()) < 0) // left < right
-            return ID.compareTo(left.getID()) > 0 // this > left
-                    && ID.compareTo(right.getID()) <= 0; // this <= right
+        if (left.getID() < right.getID()) // left < right
+            return this.ID > left.getID() && this.ID <= right.getID(); // this > left && this <= right
         else
-            return ID.compareTo(left.getID()) > 0 || ID.compareTo(right.getID()) <= 0;
+            return this.ID > left.getID() || this.ID <= right.getID();
     }
 
     /**
@@ -51,6 +50,6 @@ public class Finger {
      * @return true if this finger is equal to f2, false otherwise
      */
     public boolean equals(Finger f2) {
-        return ID.equals(f2.getID());
+        return ID == f2.getID();
     }
 }

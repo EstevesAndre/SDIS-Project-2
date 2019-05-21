@@ -9,7 +9,7 @@ public abstract class MessageManager {
         SUCCESSOR, PREDECESSOR, KEY, YOUR_PREDECESSOR, OK, ERROR
     }
 
-    public static byte[] createHeader(Type type, String nodeID, String[] args) {
+    public static byte[] createHeader(Type type, long nodeID, String[] args) {
         switch (type) {
         case KEY:
             return (type + " " + nodeID).getBytes();
@@ -24,14 +24,16 @@ public abstract class MessageManager {
             return (type + " " + nodeID + " " + args[0] + " " + args[1]).getBytes();
         case OK:
             return "OK".getBytes();
+        case ERROR:
+            return (type + "").getBytes();
         default:
             throw new IllegalArgumentException("Invalid message type for the request: " + type);
         }
     }
 
     public static byte[] createRequest(Type type, String address) {
-
-        return createHeader(type, address, null);
+        return null;
+        // return createHeader(type, address, null);
     }
 
     public static String[] parseResponse(byte[] response) {

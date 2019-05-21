@@ -16,17 +16,12 @@ public class ChordNode {
     /**
      * Size of finger table
      */
-    private static final int FINGERS_SIZE = 8;
+    private static final int FINGERS_SIZE = 32;
 
     /**
      * Unique identifier
      */
-    private final Finger ID;
-
-    /**
-     * Existing chord node identifier
-     */
-    private String existingChordNode;
+    private final Finger key;
 
     /**
      * Exisitng chord node address
@@ -63,8 +58,10 @@ public class ChordNode {
      * @throws Exception
      */
     public ChordNode(String address, String port) throws Exception {
-        this.ID = new Finger(address, Integer.parseInt(port));
-        existingChordNode = null;
+        this.key = new Finger(address, Integer.parseInt(port));
+        existingNodeAddress = null;
+        System.out.println("Creating a new ring\nChord node:\n - Address -> " + this.key.getAddress() + "\n - Port -> "
+                + this.key.getPort());
 
         this.initialize();
     }
@@ -87,13 +84,17 @@ public class ChordNode {
      * @throws Exception
      */
     public ChordNode(String address, String port, String existingAddress, String existingPort) throws Exception {
-        this.ID = new Finger(address, Integer.parseInt(port));
+        this.key = new Finger(address, Integer.parseInt(port));
         this.existingNodeAddress = existingAddress;
         this.existingNodePort = Integer.valueOf(existingPort);
-        this.existingChordNode = IOManager.getAddressHashID(existingAddress + '_' + existingPort);
 
-        if (this.ID.getID().equals(this.existingChordNode))
+        if (this.key.getAddress().equals(this.existingNodeAddress) && this.key.getPort() == this.existingNodePort)
             throw new IllegalArgumentException("Existing ID is equal to new chord node... Attemp failed!");
+
+        System.out.println("Creating a new Chord node:\n - Address -> " + this.key.getAddress() + "\n - Port -> "
+                + this.key.getPort());
+        System.out.println("Known Chord node:\n - Address -> " + this.existingNodeAddress + "\n - Port -> "
+                + this.existingNodePort);
 
         this.initialize();
     }
@@ -105,11 +106,10 @@ public class ChordNode {
      * @throws Exception
      */
     private void initialize() throws Exception {
-        System.out.println("Chord node:\n - Address -> " + this.ID.getAddress() + "\n - Port -> " + this.ID.getPort());
 
         fingers = new HashMap<Integer, Finger>(FINGERS_SIZE);
         initiateSystemConfigs();
-
+        nextFingerToFix = 0;
         this.initializeFingers();
         this.initializeSuccessors();
         this.initializeThreads();
@@ -153,8 +153,8 @@ public class ChordNode {
      *
      * @return (Finger) Unique Identifier
      */
-    public Finger getID() {
-        return this.ID;
+    public Finger getKey() {
+        return this.key;
     }
 
     /**
@@ -162,7 +162,7 @@ public class ChordNode {
      * @return Unique Identifier address
      */
     public String getAddress() {
-        return this.ID.getAddress();
+        return this.key.getAddress();
     }
 
     /**
@@ -170,7 +170,7 @@ public class ChordNode {
      * @return Unique Identifier port
      */
     public int getPort() {
-        return this.ID.getPort();
+        return this.key.getPort();
     }
 
     /**
@@ -189,25 +189,32 @@ public class ChordNode {
      */
     private void initializeFingers() throws Exception {
 
-        if (this.existingChordNode == null) { // first node
+        if (this.existingNodeAddress == null) { // first node
             for (int i = 0; i < FINGERS_SIZE; i++)
-                this.fingers.put(i, new Finger(this.ID.getAddress(), this.ID.getPort()));
+                this.fingers.put(i, new Finger(this.key.getAddress(), this.key.getPort()));
         } else {
             // join node to ring
-            System.out.println("Joining node " + this.existingChordNode);
+            System.out.println("Joining node " + this.existingNodeAddress);
+            System.out.println("Finding successor...");
 
-            for (int i = 0; i < FINGERS_SIZE; i++) {
-                System.out.println("Find " + i + "º finger!");
-                byte[] request = MessageManager.createHeader(MessageManager.Type.SUCCESSOR, this.ID.getID(),
-                        new String[] { this.getAddress(), String.valueOf(this.getPort()) });
+            byte[] request = MessageManager.createHeader(MessageManager.Type.SUCCESSOR, this.key.getID(),
+                    new String[] { this.getAddress(), String.valueOf(this.getPort()) });
 
-                byte[] response = RequestManager.sendRequest(this.existingNodeAddress, this.existingNodePort, request);
-                // [SUCCESSOR ID ADDRESS PORT]
-                String[] parts = MessageManager.parseResponse(response);
-                this.fingers.put(i, new Finger(parts[2], parts[3]));
+            byte[] response = RequestManager.sendRequest(this.existingNodeAddress, this.existingNodePort, request);
+            // [SUCCESSOR ID ADDRESS PORT]
+            String[] parts = MessageManager.parseResponse(response);
 
-                System.out.println("Received " + new String(response));
+            if (parts[0] == "ERROR")
+                throw new IllegalArgumentException("Received error");
+
+            System.out.println("Received " + new String(response));
+
+            for (int i = 1; i < FINGERS_SIZE; i++) {
+                this.fingers.put(i, new Finger(this.getAddress(), this.getPort()));
             }
+
+            this.setSuccessor(this.fingers.get(0));
+            this.notifySuccessor();
         }
 
         System.out.println("Finger table created");
@@ -215,14 +222,12 @@ public class ChordNode {
 
     /**
      * Sets the successor and predecessor
+     * 
+     * @throws Exception
      */
-    private void initializeSuccessors() {
-        this.predecessor = this.fingers.get(0); // first
+    private void initializeSuccessors() throws Exception {
+        this.predecessor = new Finger(this.getAddress(), this.getPort());
         this.successor = this.fingers.get(0); // first
-
-        if (!this.ID.equals(this.getSuccessor())) {
-
-        }
     }
 
     /**
@@ -238,10 +243,10 @@ public class ChordNode {
      * Notify sucessor that this node is his predecessor
      */
     public void notifySuccessor() {
-        if (this.getSuccessor().equals(this.ID))
+        if (this.getSuccessor().equals(this.key))
             return;
 
-        byte[] request = MessageManager.createHeader(MessageManager.Type.YOUR_PREDECESSOR, this.getID().getID(),
+        byte[] request = MessageManager.createHeader(MessageManager.Type.YOUR_PREDECESSOR, this.getKey().getID(),
                 new String[] { this.getAddress(), String.valueOf(this.getPort()) });
         byte[] response = RequestManager.sendRequest(this.getSuccessor().getAddress(), this.getSuccessor().getPort(),
                 request);
@@ -258,7 +263,7 @@ public class ChordNode {
      */
     public byte[] handlePredecessorRequest(String[] received) {
         if (predecessor == null)
-            return MessageManager.createHeader(MessageManager.Type.PREDECESSOR, "ERROR", null);
+            return MessageManager.createHeader(MessageManager.Type.ERROR, 0, null);
         else
             return MessageManager.createHeader(MessageManager.Type.PREDECESSOR, predecessor.getID(),
                     new String[] { predecessor.getAddress(), String.valueOf(predecessor.getPort()) });
@@ -273,8 +278,6 @@ public class ChordNode {
     public byte[] handleYourPredecessorRequest(String[] received) {
         // [YOUR_PREDECESSOR ID ADDRESS PORT]
 
-        System.out.println("Notified by " + received[1]);
-
         Finger potential = null;
         try {
             potential = new Finger(received[2], received[3]);
@@ -283,14 +286,14 @@ public class ChordNode {
         }
 
         if (this.predecessor == null) {
-            this.predecessor = potential;
+            System.out.println("My successor is now " + potential.getID());
+            this.setPredecessor(potential);
+        } else if (potential.comparator(predecessor, this.key)) {
+            System.out.println("My successor is now " + potential.getID());
+            this.setPredecessor(potential);
         }
 
-        if (potential.comparator(predecessor, this.ID)) {
-            this.predecessor = potential;
-        }
-
-        return MessageManager.createHeader(MessageManager.Type.OK, null, null);
+        return MessageManager.createHeader(MessageManager.Type.OK, 0, null);
     }
 
     /**
@@ -302,7 +305,7 @@ public class ChordNode {
     public byte[] handleSuccessorRequest(String[] received) {
 
         if (received.length != 4)
-            return MessageManager.createHeader(MessageManager.Type.ERROR, null, null);
+            return MessageManager.createHeader(MessageManager.Type.ERROR, 0, null);
 
         Finger looking = null;
         try {
@@ -314,7 +317,7 @@ public class ChordNode {
         Finger ret = findSuccessor(looking);
 
         if (ret == null)
-            return MessageManager.createHeader(MessageManager.Type.ERROR, null, null);
+            return MessageManager.createHeader(MessageManager.Type.ERROR, 0, null);
         else
             return MessageManager.createHeader(MessageManager.Type.SUCCESSOR, ret.getID(),
                     new String[] { ret.getAddress(), String.valueOf(ret.getPort()) });
@@ -326,20 +329,20 @@ public class ChordNode {
      * @param finger Finger to find his successor
      * @return found successor
      */
-    private Finger findSuccessor(Finger finger) {
+    public Finger findSuccessor(Finger finger) {
         // if given finger is between this ID and his sucessor
         if (successor == null)
-            return ID;
+            return this.key;
 
-        if (finger.comparator(ID, successor))
+        if (finger.comparator(this.key, successor))
             return successor;
 
         for (int i = fingers.size() - 1; i > 0; i--) {
             Finger aux = fingers.get(i);
-            if (aux != null && aux.comparator(ID, finger))
+            if (aux != null && aux.comparator(this.key, finger))
                 return aux;
         }
-        return ID;
+        return this.key;
     }
 
     public byte[] handlePutchunkRequest(byte[] content) {
