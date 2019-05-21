@@ -2,6 +2,8 @@ package source;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import threads.CheckFingers;
 import threads.CheckPredecessor;
@@ -48,6 +50,11 @@ public class ChordNode {
      * Predecessor of this node
      */
     private Finger predecessor;
+
+    /**
+     * Thread executor
+     */
+    private ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(4);
 
     /**
      * Constructor of the first chord node to enter the ring (starting node)
@@ -235,10 +242,10 @@ public class ChordNode {
      * initialize threads, Listener, CheckPredecessor and Successor
      */
     private void initializeThreads() {
-        new Thread(new Listener(this)).start();
-        new Thread(new CheckPredecessor(this, 5000)).start();
-        new Thread(new CheckSuccessor(this, 2000)).start();
-        new Thread(new CheckFingers(this, 5000)).start();
+        executor.submit(new Listener(this));
+        executor.scheduleAtFixedRate(new CheckPredecessor(this), 0, 5, TimeUnit.SECONDS);
+        executor.scheduleAtFixedRate(new CheckSuccessor(this), 0, 2, TimeUnit.SECONDS);
+        executor.scheduleAtFixedRate(new CheckFingers(this), 0, 5, TimeUnit.SECONDS);
     }
 
     /**
