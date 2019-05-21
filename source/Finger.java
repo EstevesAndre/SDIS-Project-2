@@ -18,6 +18,10 @@ public class Finger {
         this(address, Integer.parseInt(port));
     }
 
+    public Finger(long key) {
+        this.ID = key;
+    }
+
     public long getID() {
         return ID;
     }

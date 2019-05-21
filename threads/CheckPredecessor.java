@@ -53,8 +53,4 @@ public class CheckPredecessor extends Thread {
         else
             System.err.println("Found predecessor with invalid key");
     }
-
-    public void terminate() {
-        timer.cancel();
-    }
 }

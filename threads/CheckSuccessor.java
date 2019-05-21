@@ -29,13 +29,14 @@ public class CheckSuccessor extends Thread {
     @Override
     public void run() {
         Finger successor = chordNode.getSuccessor();
+
         if (successor == null) {
-            // System.out.println("Successor's not set for " + chordNode.getKey().getID());
+            System.out.println("Successor's not set for " + chordNode.getKey().getID());
             return;
         }
 
         if (successor.equals(chordNode.getKey())) {
-            // System.out.println("My successor is myself!");
+            System.out.println("My successor is myself!");
             return;
         }
 
@@ -65,11 +66,7 @@ public class CheckSuccessor extends Thread {
             chordNode.setSuccessor(newCandidate);
         }
 
-        // chordNode.notifySuccessor();
-        // System.out.println("My successor is " + newCandidate.getID());
-    }
-
-    public void terminate() {
-        timer.cancel();
+        chordNode.notifySuccessor();
+        System.out.println("My successor is " + newCandidate.getID());
     }
 }

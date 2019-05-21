@@ -3,8 +3,6 @@ package threads;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import handlers.MessageManager;
-import handlers.RequestManager;
 import source.ChordNode;
 import source.Finger;
 
@@ -13,7 +11,7 @@ public class CheckFingers extends Thread {
     private Timer timer;
     private ChordNode chordNode;
 
-    CheckFingers(ChordNode chordNode, int interval) {
+    public CheckFingers(ChordNode chordNode, int interval) {
         this.timer = new Timer();
         this.chordNode = chordNode;
 
@@ -30,22 +28,17 @@ public class CheckFingers extends Thread {
     public void run() {
         System.out.println("Fixing fingers...");
 
-        int i = chordNode.nextFingerToFix;
+        for (int i = 1; i < ChordNode.FINGERS_SIZE; i++) {
 
-        Finger edit = chordNode
-                .findSuccessor(chordNode.getIthFinger(((int) chordNode.getKey().getID() + (int) Math.pow(2, i)) % 32));
-        long successorId = edit.getID();
+            Finger successorFinger = chordNode
+                    .findSuccessor(chordNode.getFingerTableIndex(i).getID() + (long) Math.pow(2, i));
 
-        if (successorId != -1) {
-            if (successorId != chordNode.getFingers().get(i).getID()) {
-                chordNode.getFingers().put(i, edit);
+            long successorId = successorFinger.getID();
+
+            if (successorId > 0) {
+                chordNode.setFingerTableIndex(i, successorFinger);
             }
-            chordNode.nextFingerToFix = (i + 1) % 32; // replace with bit_num
         }
-
-    }
-
-    public void terminate() {
-        timer.cancel();
+        System.out.println("Fingers fixed!");
     }
 }

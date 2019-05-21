@@ -3,6 +3,7 @@ package source;
 import java.util.Arrays;
 import java.util.HashMap;
 
+import threads.CheckFingers;
 import threads.CheckPredecessor;
 import threads.CheckSuccessor;
 import threads.Listener;
@@ -16,7 +17,7 @@ public class ChordNode {
     /**
      * Size of finger table
      */
-    private static final int FINGERS_SIZE = 32;
+    public static final int FINGERS_SIZE = 32;
 
     /**
      * Unique identifier
@@ -48,8 +49,6 @@ public class ChordNode {
      */
     private Finger predecessor;
 
-    public int nextFingerToFix;
-
     /**
      * Constructor of the first chord node to enter the ring (starting node)
      *
@@ -64,14 +63,6 @@ public class ChordNode {
                 + this.key.getPort());
 
         this.initialize();
-    }
-
-    public Finger getIthFinger(int i) {
-        return fingers.get(i);
-    }
-
-    public HashMap<Integer, Finger> getFingers() {
-        return fingers;
     }
 
     /**
@@ -109,7 +100,7 @@ public class ChordNode {
 
         fingers = new HashMap<Integer, Finger>(FINGERS_SIZE);
         initiateSystemConfigs();
-        nextFingerToFix = 0;
+
         this.initializeFingers();
         this.initializeSuccessors();
         this.initializeThreads();
@@ -120,7 +111,7 @@ public class ChordNode {
      * @return (Finger) sucessor
      */
     public Finger getSuccessor() {
-        return successor;
+        return this.successor;
     }
 
     /**
@@ -173,6 +164,14 @@ public class ChordNode {
         return this.key.getPort();
     }
 
+    public Finger getFingerTableIndex(int i) {
+        return fingers.get(i);
+    }
+
+    public HashMap<Integer, Finger> getFingers() {
+        return fingers;
+    }
+
     /**
      * Sets the properties for the SSL
      */
@@ -213,7 +212,7 @@ public class ChordNode {
                 this.fingers.put(i, new Finger(this.getAddress(), this.getPort()));
             }
 
-            this.setSuccessor(this.fingers.get(0));
+            this.setSuccessor(new Finger(parts[2], parts[3]));
             this.notifySuccessor();
         }
 
@@ -226,8 +225,10 @@ public class ChordNode {
      * @throws Exception
      */
     private void initializeSuccessors() throws Exception {
+        if (this.existingNodeAddress == null)
+            this.successor = this.fingers.get(0); // first
+
         this.predecessor = new Finger(this.getAddress(), this.getPort());
-        this.successor = this.fingers.get(0); // first
     }
 
     /**
@@ -237,6 +238,7 @@ public class ChordNode {
         new Thread(new Listener(this)).start();
         new Thread(new CheckPredecessor(this, 5000)).start();
         new Thread(new CheckSuccessor(this, 2000)).start();
+        new Thread(new CheckFingers(this, 5000)).start();
     }
 
     /**
@@ -286,10 +288,10 @@ public class ChordNode {
         }
 
         if (this.predecessor == null) {
-            System.out.println("My successor is now " + potential.getID());
+            System.out.println("(1) My predecessor is now " + potential.getID());
             this.setPredecessor(potential);
         } else if (potential.comparator(predecessor, this.key)) {
-            System.out.println("My successor is now " + potential.getID());
+            System.out.println("(2) My predecessor is now " + potential.getID());
             this.setPredecessor(potential);
         }
 
@@ -343,6 +345,14 @@ public class ChordNode {
                 return aux;
         }
         return this.key;
+    }
+
+    public Finger findSuccessor(long key) {
+        return findSuccessor(new Finger(key));
+    }
+
+    public void setFingerTableIndex(int i, Finger successorFinger) {
+
     }
 
     public byte[] handlePutchunkRequest(byte[] content) {
