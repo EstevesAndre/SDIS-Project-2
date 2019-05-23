@@ -3,21 +3,23 @@ package handlers;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.AbstractMap;
-import java.util.Arrays;
 
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.security.MessageDigest;
 
 import java.io.File;
-import java.io.BufferedInputStream;
 import java.io.FileInputStream;
-import java.io.IOException;
-import java.math.BigInteger;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.FileNotFoundException;
+
+import java.security.MessageDigest;
+import java.math.BigInteger;
 
 import handlers.Chunk;
 
@@ -66,29 +68,36 @@ public class IOManager implements java.io.Serializable {
         this.rd = newRD;
     }
 
-    public static ArrayList<Chunk> splitFile(String fileID, String path, int rd) throws IOException {
-        File file = new File(path);
+    public static ArrayList<Chunk> splitFile(String fileID, String path, int rd) {
 
         System.out.println(path);
         int partCounter = 0;
         ArrayList<Chunk> chunks = new ArrayList<Chunk>();
 
-        byte[] buffer = new byte[MAX_CHUNK_SIZE];
-
-        // String fileName = file.getName();
-
-        // try-with-resources to ensure closing stream
-        try (FileInputStream fis = new FileInputStream(file); BufferedInputStream bis = new BufferedInputStream(fis)) {
-
+        try {
+            FileInputStream fin = new FileInputStream(path);
+            FileChannel fc = fin.getChannel();
+            ByteBuffer buffer = ByteBuffer.allocate(MAX_CHUNK_SIZE);
             int bytesAmount = 0;
-            while ((bytesAmount = bis.read(buffer)) > 0) {
-                byte[] copy = Arrays.copyOf(buffer, bytesAmount);
 
-                chunks.add(new Chunk(fileID, partCounter, copy, bytesAmount, rd));
+            while ((bytesAmount = fc.read(buffer)) > 0) {
+                buffer.flip();
+                byte[] arr = new byte[bytesAmount];
+                for (int i = 0; i < buffer.limit(); i++) {
+                    arr[i] = buffer.get();
+                }
+                buffer.clear();
+
+                chunks.add(new Chunk(fileID, partCounter, arr, bytesAmount, rd));
                 partCounter++;
             }
-        } catch (Exception e) {
-            System.err.println("WARNING --> : File: \"" + path + "\" not found!\n");
+            fc.close();
+            fin.close();
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
         return chunks;
@@ -97,29 +106,27 @@ public class IOManager implements java.io.Serializable {
     public static void restoreFile(String path, String fileID, int nrChunks,
             ConcurrentHashMap<AbstractMap.SimpleEntry<String, Integer>, byte[]> chunks) throws IOException {
 
-        // System.out.println("PATH = " + path);
-        File file = new File(path);
-
         try {
-            if (!file.exists()) {
-                file.getParentFile().mkdirs();
-                file.createNewFile();
-            }
-
-            FileOutputStream fos = new FileOutputStream(file, true);
+            FileOutputStream fout = new FileOutputStream("x" + path);
+            FileChannel fc = fout.getChannel();
+            ByteBuffer buffer = ByteBuffer.allocate(MAX_CHUNK_SIZE);
 
             for (int chunkID = 0; chunkID < nrChunks; chunkID++) {
                 for (AbstractMap.SimpleEntry<String, Integer> key : chunks.keySet()) {
                     if (key.getKey().equals(fileID) && key.getValue() == chunkID) {
-                        byte[] p = chunks.get(key);
-                        fos.write(p);
+                        buffer.put(chunks.get(key));
+                        buffer.flip();
+                        fc.write(buffer);
+                        buffer.clear();
                     }
                 }
             }
 
-            fos.close();
-
-        } catch (Exception e) {
+            fout.close();
+        } catch (FileNotFoundException e1) {
+            e1.printStackTrace();
+            System.err.println("Error while restoring File\n");
+        } catch (IOException e) {
             e.printStackTrace();
             System.err.println("Error while restoring File\n");
         }
