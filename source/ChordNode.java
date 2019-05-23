@@ -226,6 +226,12 @@ public class ChordNode {
 
             byte[] response = RequestManager.sendRequest(this.existingNodeAddress, this.existingNodePort, request);
             // [SUCCESSOR ID ADDRESS PORT]
+
+            if (response == null) {
+                System.out.println("Successor is now dead!");
+                return;
+            }
+
             String[] parts = MessageManager.parseResponse(response);
 
             if (parts[0] == "ERROR")
@@ -262,10 +268,10 @@ public class ChordNode {
      */
     private void initializeThreads() {
         executor.submit(new Listener(this));
-        executor.scheduleAtFixedRate(new CheckPredecessor(this), 0, 5, TimeUnit.SECONDS);
-        executor.scheduleAtFixedRate(new CheckSuccessor(this), 0, 2, TimeUnit.SECONDS);
-        executor.scheduleAtFixedRate(new CheckFingers(this), 0, 5, TimeUnit.SECONDS);
-        executor.scheduleAtFixedRate(new x(this), 1, 10, TimeUnit.SECONDS);
+        executor.scheduleAtFixedRate(new CheckPredecessor(this), 0, 10, TimeUnit.SECONDS);
+        executor.scheduleAtFixedRate(new CheckSuccessor(this), 0, 5, TimeUnit.SECONDS);
+        executor.scheduleAtFixedRate(new CheckFingers(this), 0, 15, TimeUnit.SECONDS);
+        // executor.scheduleAtFixedRate(new x(this), 1, 10, TimeUnit.SECONDS);
     }
 
     /**
@@ -387,6 +393,11 @@ public class ChordNode {
         byte[] response = RequestManager.sendRequest(toSendSuccessorRequest.getAddress(),
                 toSendSuccessorRequest.getPort(), request);
         // [SUCCESSOR ID ADDRESS PORT]
+        if (response == null) {
+            System.out.println("Successor is now dead!");
+            return this.key;
+        }
+
         String[] parts = MessageManager.parseResponse(response);
 
         if (parts[0] == "ERROR")
