@@ -14,15 +14,11 @@ public class CheckFingers implements Runnable {
 
     @Override
     public void run() {
-        System.out.println("Fixing fingers... ");
-
         for (int i = 0; i < ChordNode.FINGERS_SIZE; i++) {
             Finger toGet = new Finger(chordNode.getKey().getID().add(new BigInteger("2").pow(i)));
 
             Finger successorFinger = chordNode.findSuccessor(toGet);
             chordNode.setFingerTableIndex(i, successorFinger);
-
         }
-        System.out.println("Fingers fixed!");
     }
 }
