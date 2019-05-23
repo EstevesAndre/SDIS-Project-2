@@ -1,5 +1,7 @@
 package threads;
 
+import java.nio.charset.StandardCharsets;
+
 import handlers.MessageManager;
 import handlers.RequestManager;
 import source.ChordNode;
@@ -20,10 +22,15 @@ public class CheckSuccessor implements Runnable {
             System.out.println("Successor's not set for " + chordNode.getKey().getID());
             return;
         }
-
         // resquests for the predecessor of my successor
         byte[] request = MessageManager.createHeader(MessageManager.Type.PREDECESSOR, chordNode.getKey().getID(), null);
-        byte[] response = RequestManager.sendRequest(successor.getAddress(), successor.getPort(), request);
+        byte[] response = null;
+
+        if (chordNode.getPredecessor().equals(chordNode.getKey())) {
+            response = chordNode
+                    .handlePredecessorRequest(new String(request, StandardCharsets.UTF_8).trim().split("\\s+"));
+        } else
+            response = RequestManager.sendRequest(successor.getAddress(), successor.getPort(), request);
 
         if (response == null) {
             System.out.println("Successor is now dead!");
