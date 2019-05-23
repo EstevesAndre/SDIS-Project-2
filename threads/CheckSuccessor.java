@@ -21,17 +21,18 @@ public class CheckSuccessor implements Runnable {
             return;
         }
 
-        if (successor.equals(chordNode.getKey())) {
-            System.out.println("My successor is myself!");
-            return;
-        }
-
         // resquests for the predecessor of my successor
         byte[] request = MessageManager.createHeader(MessageManager.Type.PREDECESSOR, chordNode.getKey().getID(), null);
         byte[] response = RequestManager.sendRequest(successor.getAddress(), successor.getPort(), request);
 
+        if (response == null) {
+            System.out.println("Successor is now dead!");
+            chordNode.setSuccessor(null);
+            return;
+        }
+
         String[] splited = MessageManager.parseResponse(response);
-        // [PREDECESSOR, (ID, Address, Port) | ERROR]
+        // [PREDECESSOR, (ID, Address, Port) | ERROR
 
         if (splited[0].equals("ERROR")) {
             System.out.println("Predecessor of my sucessor is not set!");
@@ -48,11 +49,16 @@ public class CheckSuccessor implements Runnable {
             e.printStackTrace();
         }
 
-        if (newCandidate.comparator(chordNode.getKey(), successor)) {
+        if (newCandidate.comparator(chordNode.getKey(), successor)
+                || chordNode.getKey().equals(chordNode.getSuccessor())) {
             chordNode.setSuccessor(newCandidate);
         }
 
         chordNode.notifySuccessor();
-        System.out.println("My successor is " + newCandidate.getID());
+        if (chordNode.getSuccessor().equals(chordNode.getKey()))
+            System.out.println("SUCCESSOR " + chordNode.getSuccessor().getID() + " (ME)");
+        else
+            System.out.println("SUCCESSOR " + chordNode.getSuccessor().getID());
+
     }
 }

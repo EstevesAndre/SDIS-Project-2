@@ -1,5 +1,7 @@
 package threads;
 
+import java.math.BigInteger;
+
 import source.ChordNode;
 import source.Finger;
 
@@ -12,18 +14,14 @@ public class CheckFingers implements Runnable {
 
     @Override
     public void run() {
-        System.out.println("Fixing fingers...");
+        System.out.println("Fixing fingers... ");
 
-        for (int i = 1; i < ChordNode.FINGERS_SIZE; i++) {
+        for (int i = 0; i < ChordNode.FINGERS_SIZE; i++) {
+            Finger toGet = new Finger(chordNode.getKey().getID().add(new BigInteger("2").pow(i)));
 
-            Finger successorFinger = chordNode
-                    .findSuccessor(chordNode.getFingerTableIndex(i).getID() + (long) Math.pow(2, i));
+            Finger successorFinger = chordNode.findSuccessor(toGet);
+            chordNode.setFingerTableIndex(i, successorFinger);
 
-            long successorId = successorFinger.getID();
-
-            if (successorId > 0) {
-                chordNode.setFingerTableIndex(i, successorFinger);
-            }
         }
         System.out.println("Fingers fixed!");
     }

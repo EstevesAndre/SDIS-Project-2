@@ -16,6 +16,7 @@ import java.io.File;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.io.FileOutputStream;
 
 import handlers.Chunk;
@@ -124,21 +125,21 @@ public class IOManager implements java.io.Serializable {
         }
     }
 
-    public static long getAddressHashID(String toHash) throws Exception {
+    public static BigInteger getAddressHashID(String toHash) throws Exception {
         MessageDigest digest;
-        String hashed = "";
+        byte[] hashed = null;
 
         try {
             // Create new SHA-1 digest
             digest = MessageDigest.getInstance("SHA-1");
-            hashed = bytesToHex(digest.digest(toHash.getBytes(StandardCharsets.UTF_8)));
+            hashed = digest.digest(toHash.getBytes(StandardCharsets.UTF_8));
 
         } catch (Exception e) {
             System.err.println("Error: SHA-1 Failed!");
             e.printStackTrace();
         }
 
-        return ((int) hashed.hashCode() & 0x00000000ffffffffL);
+        return new BigInteger(1, hashed);
     }
 
     public static String bytesToHex(byte[] bytes) throws Exception {

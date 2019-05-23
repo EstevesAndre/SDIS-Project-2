@@ -1,5 +1,6 @@
 package source;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -9,8 +10,7 @@ import threads.CheckFingers;
 import threads.CheckPredecessor;
 import threads.CheckSuccessor;
 import threads.Listener;
-
-import handlers.IOManager;
+import threads.x;
 import handlers.MessageManager;
 import handlers.RequestManager;
 
@@ -19,7 +19,7 @@ public class ChordNode {
     /**
      * Size of finger table
      */
-    public static final int FINGERS_SIZE = 32;
+    public static final int FINGERS_SIZE = 180;
 
     /**
      * Unique identifier
@@ -54,7 +54,7 @@ public class ChordNode {
     /**
      * Thread executor
      */
-    private ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(4);
+    private ScheduledThreadPoolExecutor executor;
 
     /**
      * Constructor of the first chord node to enter the ring (starting node)
@@ -104,6 +104,7 @@ public class ChordNode {
      * @throws Exception
      */
     private void initialize() throws Exception {
+        this.executor = new ScheduledThreadPoolExecutor(4);
 
         fingers = new HashMap<Integer, Finger>(FINGERS_SIZE);
         initiateSystemConfigs();
@@ -127,7 +128,15 @@ public class ChordNode {
      * @param newSuccessor Next Successor
      */
     public void setSuccessor(Finger newSuccessor) {
-        this.successor = newSuccessor;
+        if (newSuccessor == null)
+            try {
+                this.successor = new Finger(this.getAddress(), this.getPort());
+            } catch (Exception e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        else
+            this.successor = newSuccessor;
     }
 
     /**
@@ -144,7 +153,15 @@ public class ChordNode {
      * @param newPredecessor Next predecessor
      */
     public void setPredecessor(Finger newPredecessor) {
-        this.predecessor = newPredecessor;
+        if (newPredecessor == null)
+            try {
+                this.predecessor = new Finger(this.getAddress(), this.getPort());
+            } catch (Exception e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        else
+            this.predecessor = newPredecessor;
     }
 
     /**
@@ -197,7 +214,8 @@ public class ChordNode {
 
         if (this.existingNodeAddress == null) { // first node
             for (int i = 0; i < FINGERS_SIZE; i++)
-                this.fingers.put(i, new Finger(this.key.getAddress(), this.key.getPort()));
+                this.fingers.put(i, new Finger(this.getAddress(), this.getPort()));
+
         } else {
             // join node to ring
             System.out.println("Joining node " + this.existingNodeAddress);
@@ -215,12 +233,10 @@ public class ChordNode {
 
             System.out.println("Received " + new String(response));
 
+            this.fingers.put(0, new Finger(parts[2], parts[3]));
             for (int i = 1; i < FINGERS_SIZE; i++) {
                 this.fingers.put(i, new Finger(this.getAddress(), this.getPort()));
             }
-
-            this.setSuccessor(new Finger(parts[2], parts[3]));
-            this.notifySuccessor();
         }
 
         System.out.println("Finger table created");
@@ -232,10 +248,13 @@ public class ChordNode {
      * @throws Exception
      */
     private void initializeSuccessors() throws Exception {
-        if (this.existingNodeAddress == null)
-            this.successor = this.fingers.get(0); // first
-
+        this.successor = this.fingers.get(0); // first
         this.predecessor = new Finger(this.getAddress(), this.getPort());
+
+        if (this.existingNodeAddress == null)
+            this.notifySuccessor();
+
+        System.out.println(this.key.getID() + " " + this.successor.getID() + " " + this.predecessor.getID());
     }
 
     /**
@@ -246,6 +265,7 @@ public class ChordNode {
         executor.scheduleAtFixedRate(new CheckPredecessor(this), 0, 5, TimeUnit.SECONDS);
         executor.scheduleAtFixedRate(new CheckSuccessor(this), 0, 2, TimeUnit.SECONDS);
         executor.scheduleAtFixedRate(new CheckFingers(this), 0, 5, TimeUnit.SECONDS);
+        executor.scheduleAtFixedRate(new x(this), 1, 10, TimeUnit.SECONDS);
     }
 
     /**
@@ -257,10 +277,14 @@ public class ChordNode {
 
         byte[] request = MessageManager.createHeader(MessageManager.Type.YOUR_PREDECESSOR, this.getKey().getID(),
                 new String[] { this.getAddress(), String.valueOf(this.getPort()) });
+
         byte[] response = RequestManager.sendRequest(this.getSuccessor().getAddress(), this.getSuccessor().getPort(),
                 request);
-        String isOK = new String(response);
-        if (!isOK.equals("OK"))
+
+        if (response == null)
+            return;
+
+        if (!"OK".equals(new String(response)))
             System.out.println("ERROR OCCURRED");
     }
 
@@ -272,7 +296,7 @@ public class ChordNode {
      */
     public byte[] handlePredecessorRequest(String[] received) {
         if (predecessor == null)
-            return MessageManager.createHeader(MessageManager.Type.ERROR, 0, null);
+            return MessageManager.createHeader(MessageManager.Type.ERROR, null, null);
         else
             return MessageManager.createHeader(MessageManager.Type.PREDECESSOR, predecessor.getID(),
                     new String[] { predecessor.getAddress(), String.valueOf(predecessor.getPort()) });
@@ -302,7 +326,7 @@ public class ChordNode {
             this.setPredecessor(potential);
         }
 
-        return MessageManager.createHeader(MessageManager.Type.OK, 0, null);
+        return MessageManager.createHeader(MessageManager.Type.OK, null, null);
     }
 
     /**
@@ -312,9 +336,8 @@ public class ChordNode {
      * @return message with ERROR or Successor, ID, Address and Port
      */
     public byte[] handleSuccessorRequest(String[] received) {
-
         if (received.length != 4)
-            return MessageManager.createHeader(MessageManager.Type.ERROR, 0, null);
+            return MessageManager.createHeader(MessageManager.Type.ERROR, null, null);
 
         Finger looking = null;
         try {
@@ -326,7 +349,7 @@ public class ChordNode {
         Finger ret = findSuccessor(looking);
 
         if (ret == null)
-            return MessageManager.createHeader(MessageManager.Type.ERROR, 0, null);
+            return MessageManager.createHeader(MessageManager.Type.ERROR, null, null);
         else
             return MessageManager.createHeader(MessageManager.Type.SUCCESSOR, ret.getID(),
                     new String[] { ret.getAddress(), String.valueOf(ret.getPort()) });
@@ -346,20 +369,45 @@ public class ChordNode {
         if (finger.comparator(this.key, successor))
             return successor;
 
+        Finger toSendSuccessorRequest = null;
+
         for (int i = fingers.size() - 1; i > 0; i--) {
             Finger aux = fingers.get(i);
-            if (aux != null && aux.comparator(this.key, finger))
-                return aux;
+            if (aux != null && aux.comparator(this.key, finger)) {
+                toSendSuccessorRequest = aux;
+                break;
+            }
         }
-        return this.key;
+
+        if (toSendSuccessorRequest == null)
+            return this.key;
+
+        byte[] request = MessageManager.createHeader(MessageManager.Type.SUCCESSOR, this.key.getID(),
+                new String[] { this.getAddress(), String.valueOf(this.getPort()) });
+        byte[] response = RequestManager.sendRequest(toSendSuccessorRequest.getAddress(),
+                toSendSuccessorRequest.getPort(), request);
+        // [SUCCESSOR ID ADDRESS PORT]
+        String[] parts = MessageManager.parseResponse(response);
+
+        if (parts[0] == "ERROR")
+            throw new IllegalArgumentException("Received error");
+
+        Finger succ = null;
+        try {
+            succ = new Finger(parts[2], parts[3]);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return succ;
     }
 
-    public Finger findSuccessor(long key) {
+    public Finger findSuccessor(BigInteger key) {
         return findSuccessor(new Finger(key));
     }
 
-    public void setFingerTableIndex(int i, Finger successorFinger) {
-
+    public void setFingerTableIndex(int index, Finger successorFinger) {
+        this.fingers.put(index, successorFinger);
     }
 
     public byte[] handlePutchunkRequest(byte[] content) {

@@ -1,5 +1,6 @@
 package threads;
 
+import java.math.BigInteger;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -22,11 +23,11 @@ public class CheckPredecessor implements Runnable {
         if (predecessor == null) {
             System.out.println("Predecessor's not set for " + chordNode.getKey().getID());
             return;
-        } else if (predecessor.getID() == chordNode.getKey().getID()) {
-            System.out.println("I'm my own predecessor, with ID " + chordNode.getKey().getID());
+        } else if (predecessor.equals(chordNode.getKey())) {
+            System.out.println("PREDECESSOR " + chordNode.getKey().getID() + " (ME)");
             return;
         }
-        System.out.println("My current predecessor is " + predecessor.getID());
+        System.out.println("PREDECESSOR " + predecessor.getID());
 
         byte[] request = MessageManager.createHeader(MessageManager.Type.KEY, chordNode.getKey().getID(), null);
         byte[] response = RequestManager.sendRequest(predecessor.getAddress(), predecessor.getPort(), request);
@@ -37,7 +38,7 @@ public class CheckPredecessor implements Runnable {
             return;
         }
         String key = MessageManager.parseResponse(response)[1];
-        if (Integer.parseInt(key) == predecessor.getID())
+        if (predecessor.getID().compareTo(new BigInteger(key)) == 0)
             System.out.println("Predecessor is still alive!!");
         else
             System.err.println("Found predecessor with invalid key");

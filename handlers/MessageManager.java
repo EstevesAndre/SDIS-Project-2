@@ -1,5 +1,7 @@
 package handlers;
 
+import java.math.BigInteger;
+
 // Class used to create message requests
 
 public abstract class MessageManager {
@@ -9,21 +11,25 @@ public abstract class MessageManager {
         SUCCESSOR, PREDECESSOR, KEY, YOUR_PREDECESSOR, OK, ERROR
     }
 
-    public static byte[] createHeader(Type type, long nodeID, String[] args) {
+    public static byte[] createHeader(Type type, BigInteger nodeID, String[] args) {
+        String ID = null;
+        if (nodeID != null)
+            ID = nodeID.toString();
+
         switch (type) {
         case KEY:
-            return (type + " " + nodeID).getBytes();
+            return (type + " " + ID).getBytes();
         case PREDECESSOR:
             if (args == null)
-                return (type + " " + nodeID).getBytes();
+                return (type + " " + ID).getBytes();
             else
-                return (type + " " + nodeID + " " + args[0] + " " + args[1]).getBytes();
+                return (type + " " + ID + " " + args[0] + " " + args[1]).getBytes();
         case YOUR_PREDECESSOR:
-            return (type + " " + nodeID + " " + args[0] + " " + args[1]).getBytes();
+            return (type + " " + ID + " " + args[0] + " " + args[1]).getBytes();
         case SUCCESSOR:
-            return (type + " " + nodeID + " " + args[0] + " " + args[1]).getBytes();
+            return (type + " " + ID + " " + args[0] + " " + args[1]).getBytes();
         case OK:
-            return "OK".getBytes();
+            return (type + "").getBytes();
         case ERROR:
             return (type + "").getBytes();
         default:

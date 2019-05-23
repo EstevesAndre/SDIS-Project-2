@@ -50,7 +50,6 @@ public abstract class RequestManager {
 
         try {
             Thread.sleep(50);
-
             response = getResponse(socket);
             socket.close();
 

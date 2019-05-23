@@ -1,28 +1,30 @@
 package source;
 
+import java.math.BigInteger;
+
 import handlers.IOManager;
 
 public class Finger {
 
-    private long ID;
+    private BigInteger ID;
     private String address;
     private int port;
 
     public Finger(String address, int port) throws Exception {
         this.address = address;
         this.port = port;
-        this.ID = IOManager.getAddressHashID(address + '_' + port) % (int) Math.pow(2, 32);
+        this.ID = IOManager.getAddressHashID(address + '_' + port);
     }
 
     public Finger(String address, String port) throws Exception {
         this(address, Integer.parseInt(port));
     }
 
-    public Finger(long key) {
+    public Finger(BigInteger key) {
         this.ID = key;
     }
 
-    public long getID() {
+    public BigInteger getID() {
         return ID;
     }
 
@@ -42,10 +44,22 @@ public class Finger {
      */
     public boolean comparator(Finger left, Finger right) {
 
-        if (left.getID() < right.getID()) // left < right
-            return this.ID > left.getID() && this.ID <= right.getID(); // this > left && this <= right
-        else
-            return this.ID > left.getID() || this.ID <= right.getID();
+        // String l = left.getID().toString().substring(left.getID().toString().length()
+        // - 30);
+        // String r =
+        // right.getID().toString().substring(right.getID().toString().length() - 30);
+        // String t = ID.toString().substring(ID.toString().length() - 30);
+
+        // if (l.compareTo(r) == -1)
+        // return t.compareTo(l) == 1 && t.compareTo(r) != 1;
+        // else
+        // return t.compareTo(l) == 1 || t.compareTo(r) != 1;
+
+        if (left.getID().compareTo(right.getID()) == -1) { // left < right
+            return (ID.compareTo(left.getID()) == 1) && (ID.compareTo(right.getID()) != 1);
+        } else {
+            return (ID.compareTo(left.getID()) == 1) || (ID.compareTo(right.getID()) != 1);
+        }
     }
 
     /**
@@ -54,6 +68,6 @@ public class Finger {
      * @return true if this finger is equal to f2, false otherwise
      */
     public boolean equals(Finger f2) {
-        return ID == f2.getID();
+        return ID.compareTo(f2.getID()) == 0;
     }
 }
