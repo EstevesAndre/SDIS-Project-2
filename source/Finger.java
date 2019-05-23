@@ -1,7 +1,6 @@
 package source;
 
 import java.math.BigInteger;
-
 import handlers.IOManager;
 
 public class Finger {
@@ -43,17 +42,6 @@ public class Finger {
      * @return true if finger is betweem left and right, false otherwise
      */
     public boolean comparator(Finger left, Finger right) {
-
-        // String l = left.getID().toString().substring(left.getID().toString().length()
-        // - 30);
-        // String r =
-        // right.getID().toString().substring(right.getID().toString().length() - 30);
-        // String t = ID.toString().substring(ID.toString().length() - 30);
-
-        // if (l.compareTo(r) == -1)
-        // return t.compareTo(l) == 1 && t.compareTo(r) != 1;
-        // else
-        // return t.compareTo(l) == 1 || t.compareTo(r) != 1;
 
         if (left.getID().compareTo(right.getID()) == -1) { // left < right
             return (ID.compareTo(left.getID()) == 1) && (ID.compareTo(right.getID()) != 1);
