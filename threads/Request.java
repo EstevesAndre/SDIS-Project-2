@@ -46,14 +46,8 @@ public class Request implements Runnable {
         }
 
         // sends request
-        // waits for response
-        try {
-            Thread.sleep(50);
-        } catch (InterruptedException e1) {
-            // e1.printStackTrace();
-        }
         byte[] response = RequestManager.handleRequest(node, read);
-
+        // waits for response
         try {
             if (response != null)
                 output.writeObject(response);

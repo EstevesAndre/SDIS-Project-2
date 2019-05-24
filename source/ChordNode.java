@@ -268,7 +268,7 @@ public class ChordNode {
         executor.submit(new Listener(this));
         executor.scheduleAtFixedRate(new CheckPredecessor(this), 0, 5, TimeUnit.SECONDS);
         executor.scheduleAtFixedRate(new CheckSuccessor(this), 0, 2, TimeUnit.SECONDS);
-        executor.scheduleAtFixedRate(new CheckFingers(this), 0, 15, TimeUnit.SECONDS);
+        executor.scheduleAtFixedRate(new CheckFingers(this), 0, 20, TimeUnit.SECONDS);
         executor.scheduleAtFixedRate(new x(this), 1, 10, TimeUnit.SECONDS);
     }
 

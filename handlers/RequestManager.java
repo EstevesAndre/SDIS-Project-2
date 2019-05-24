@@ -50,7 +50,7 @@ public abstract class RequestManager {
         byte[] response = null;
 
         try {
-            Thread.sleep(50);
+            Thread.sleep(100);
             response = getResponse(socket);
             socket.close();
         } catch (IOException e) {
@@ -64,16 +64,18 @@ public abstract class RequestManager {
 
     private static byte[] getResponse(SSLSocket socket) {
 
+        byte[] response = null;
+
         try {
             ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
-            return (byte[]) input.readObject();
+            response = (byte[]) input.readObject();
         } catch (IOException e) {
             // e.printStackTrace();
         } catch (ClassNotFoundException e) {
             // e.printStackTrace();
         }
 
-        return null;
+        return response;
     }
 
     public static byte[] handleRequest(ChordNode node, byte[] request) {
