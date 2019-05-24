@@ -33,7 +33,7 @@ public class CheckSuccessor implements Runnable {
             response = RequestManager.sendRequest(successor.getAddress(), successor.getPort(), request);
 
         if (response == null) {
-            System.out.println("Successor is now dead!");
+            System.out.println("Z Successor is now dead!");
             chordNode.setSuccessor(null);
             return;
         }

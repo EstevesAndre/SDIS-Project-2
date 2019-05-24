@@ -132,7 +132,6 @@ public class ChordNode {
             try {
                 this.successor = new Finger(this.getAddress(), this.getPort());
             } catch (Exception e) {
-                // TODO Auto-generated catch block
                 e.printStackTrace();
             }
         else
@@ -157,7 +156,6 @@ public class ChordNode {
             try {
                 this.predecessor = new Finger(this.getAddress(), this.getPort());
             } catch (Exception e) {
-                // TODO Auto-generated catch block
                 e.printStackTrace();
             }
         else
@@ -228,7 +226,7 @@ public class ChordNode {
             // [SUCCESSOR ID ADDRESS PORT]
 
             if (response == null) {
-                System.out.println("Successor is now dead!");
+                System.out.println("X Successor is now dead!");
                 return;
             }
 
@@ -268,10 +266,10 @@ public class ChordNode {
      */
     private void initializeThreads() {
         executor.submit(new Listener(this));
-        executor.scheduleAtFixedRate(new CheckPredecessor(this), 0, 10, TimeUnit.SECONDS);
-        executor.scheduleAtFixedRate(new CheckSuccessor(this), 0, 5, TimeUnit.SECONDS);
+        executor.scheduleAtFixedRate(new CheckPredecessor(this), 0, 5, TimeUnit.SECONDS);
+        executor.scheduleAtFixedRate(new CheckSuccessor(this), 0, 2, TimeUnit.SECONDS);
         executor.scheduleAtFixedRate(new CheckFingers(this), 0, 15, TimeUnit.SECONDS);
-        // executor.scheduleAtFixedRate(new x(this), 1, 10, TimeUnit.SECONDS);
+        executor.scheduleAtFixedRate(new x(this), 1, 10, TimeUnit.SECONDS);
     }
 
     /**
@@ -394,7 +392,7 @@ public class ChordNode {
                 toSendSuccessorRequest.getPort(), request);
         // [SUCCESSOR ID ADDRESS PORT]
         if (response == null) {
-            System.out.println("Successor is now dead!");
+            System.out.println("Y Successor is now dead!");
             return this.key;
         }
 

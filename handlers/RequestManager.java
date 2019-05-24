@@ -43,19 +43,19 @@ public abstract class RequestManager {
     public static byte[] sendRequest(String IPAddress, int IPPort, byte[] request) {
 
         SSLSocket socket = send(IPAddress, IPPort, request);
-        if (socket == null)
+        if (socket == null) {
+            System.out.println("SOCKET NULL");
             return null;
-
+        }
         byte[] response = null;
 
         try {
             Thread.sleep(50);
             response = getResponse(socket);
             socket.close();
-
-        } catch (InterruptedException e) {
-            // e.printStackTrace();
         } catch (IOException e) {
+            // e.printStackTrace();
+        } catch (InterruptedException e) {
             // e.printStackTrace();
         }
 

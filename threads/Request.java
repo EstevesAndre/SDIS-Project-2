@@ -47,15 +47,23 @@ public class Request implements Runnable {
 
         // sends request
         // waits for response
+        try {
+            Thread.sleep(50);
+        } catch (InterruptedException e1) {
+            // e1.printStackTrace();
+        }
         byte[] response = RequestManager.handleRequest(node, read);
 
         try {
             if (response != null)
                 output.writeObject(response);
+            Thread.sleep(50);
             input.close();
             output.close();
         } catch (IOException e) {
             throw new RuntimeException("Failed writing object to socket stream.", e);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 }
