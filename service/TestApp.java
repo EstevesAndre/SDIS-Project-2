@@ -47,39 +47,33 @@ public class TestApp {
 
     private void invokeRequest() throws Exception {
 
-        try {
-            switch (this.operation) {
-            case "BACKUP":
-                RequestManager.backupRequest(address, port, op1, op2);
-                break;
-            case "BACKUPENH":
-                RequestManager.backupNhRequest(address, port, op1, op2);
-                break;
-            case "RESTORE":
-                RequestManager.restoreRequest(address, port, op1);
-                break;
-            case "DELETE":
-                RequestManager.deleteRequest(address, port, op1);
-                break;
-            case "DELETEENH":
-                RequestManager.deleteNhRequest(address, port, op1);
-                break;
-            case "RECLAIM":
-                RequestManager.reclaimRequest(address, port, op1);
-                break;
-            case "STATE":
-                RequestManager.stateRequest(address, port, op1);
-                break;
-            default:
-                System.err.println(
-                        "Wrong operation to make the request.\n" + "Make sure you use of the following requests:"
-                                + "\n- BACKUP" + "\n- RESTORE" + "\n- DELETE" + "\n- RECLAIM" + "\n- STATE" + "\r\n");
-                return;
-            }
-        } catch (Exception e) {
-            System.err.println("ERROR --> " + this.getClass() + ": File not found!");
-            e.printStackTrace();
-            System.exit(-2);
+        switch (this.operation) {
+        case "BACKUP":
+            RequestManager.backupRequest(address, port, op1, op2);
+            break;
+        case "BACKUPENH":
+            RequestManager.backupNhRequest(address, port, op1, op2);
+            break;
+        case "RESTORE":
+            RequestManager.restoreRequest(address, port, op1);
+            break;
+        case "DELETE":
+            RequestManager.deleteRequest(address, port, op1);
+            break;
+        case "DELETEENH":
+            RequestManager.deleteNhRequest(address, port, op1);
+            break;
+        case "RECLAIM":
+            RequestManager.reclaimRequest(address, port, op1);
+            break;
+        case "STATE":
+            RequestManager.stateRequest(address, port, op1);
+            break;
+        default:
+            System.err.println("Wrong operation to make the request.\n" + "Make sure you use of the following requests:"
+                    + "\n- BACKUP" + "\n- RESTORE" + "\n- DELETE" + "\n- RECLAIM" + "\n- STATE" + "\r\n");
+            return;
         }
+
     }
 }

@@ -433,7 +433,8 @@ public class ChordNode {
         byte[] chunkcontent = Arrays.copyOfRange(content, splitIndex, content.length);
         String[] received = new String(content, 0, splitIndex).trim().split("\\s+");
 
-        // TODO: stores chunkcontent
+        // TODO: requests for the successor of the chunk and then send it to the
+        // sucessor to store
 
         return MessageManager.createApplicationHeader(MessageManager.Type.STORED, received[1],
                 Integer.parseInt(received[2]), 0);
