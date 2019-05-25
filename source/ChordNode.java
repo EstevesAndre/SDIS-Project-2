@@ -467,7 +467,7 @@ public class ChordNode {
 
     public byte[] handleDeleteRequest(String filename) {
         if (ChordNode.debug2)
-            System.out.println("DELETE " + filename);
+            System.out.println("DELETE " + filename + " ");
 
         BigInteger fileHash = IOManager.getStringHashed(filename);
         // requests for the filename owner to get the number of chunks
