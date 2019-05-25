@@ -12,7 +12,7 @@ public class Finger {
     public Finger(String address, int port) throws Exception {
         this.address = address;
         this.port = port;
-        this.ID = IOManager.getAddressHashID(address + '_' + port);
+        this.ID = IOManager.getStringHashed(address + '_' + port);
     }
 
     public Finger(String address, String port) throws Exception {
@@ -57,5 +57,9 @@ public class Finger {
      */
     public boolean equals(Finger f2) {
         return ID.compareTo(f2.getID()) == 0;
+    }
+
+    public String toString() {
+        return address + " " + port;
     }
 }

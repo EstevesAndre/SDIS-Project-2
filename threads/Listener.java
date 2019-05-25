@@ -22,8 +22,9 @@ public class Listener implements Runnable {
             sslServerSocket.setEnabledCipherSuites(sslServerSocket.getSupportedCipherSuites());
 
         } catch (IOException e) {
-            System.out.println(
-                    "ERROR : serverSocketFactory biding...\nMaybe your port is already in use, check your input parameters!");
+            if (ChordNode.debug)
+                System.out.println(
+                        "ERROR : serverSocketFactory biding...\nMaybe your port is already in use, check your input parameters!");
             e.printStackTrace();
             System.exit(-2);
         }
@@ -41,7 +42,8 @@ public class Listener implements Runnable {
                 new Thread(new Request(this.node, sslSocket)).start();
             }
         } catch (IOException e) {
-            System.err.println("Error listening on server socket");
+            if (ChordNode.debug)
+                System.err.println("Error listening on server socket");
             e.printStackTrace();
         }
     }

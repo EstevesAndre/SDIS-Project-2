@@ -19,7 +19,8 @@ public class CheckSuccessor implements Runnable {
         Finger successor = chordNode.getSuccessor();
 
         if (successor == null) {
-            System.out.println("Successor's not set for " + chordNode.getKey().getID());
+            if (ChordNode.debug)
+                System.out.println("Successor's not set for " + chordNode.getKey().getID());
             return;
         }
         // resquests for the predecessor of my successor
@@ -33,7 +34,8 @@ public class CheckSuccessor implements Runnable {
             response = RequestManager.sendRequest(successor.getAddress(), successor.getPort(), request);
 
         if (response == null) {
-            System.out.println("Z Successor is now dead!");
+            if (ChordNode.debug)
+                System.out.println("Z Successor is now dead!");
             chordNode.setSuccessor(null);
             return;
         }
@@ -42,7 +44,8 @@ public class CheckSuccessor implements Runnable {
         // [PREDECESSOR, (ID, Address, Port) | ERROR
 
         if (splited[0].equals("ERROR")) {
-            System.out.println("Predecessor of my sucessor is not set!");
+            if (ChordNode.debug)
+                System.out.println("Predecessor of my sucessor is not set!");
             return;
         }
 
@@ -62,10 +65,11 @@ public class CheckSuccessor implements Runnable {
         }
 
         chordNode.notifySuccessor();
-        if (chordNode.getSuccessor().equals(chordNode.getKey()))
-            System.out.println("SUCCESSOR " + chordNode.getSuccessor().getID() + " (ME)");
-        else
-            System.out.println("SUCCESSOR " + chordNode.getSuccessor().getID());
+        if (ChordNode.debug)
+            if (chordNode.getSuccessor().equals(chordNode.getKey()))
+                System.out.println("SUCCESSOR " + chordNode.getSuccessor().getID() + " (ME)");
+            else
+                System.out.println("SUCCESSOR " + chordNode.getSuccessor().getID());
 
     }
 }

@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.FileNotFoundException;
 
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.math.BigInteger;
 
 import handlers.Chunk;
@@ -132,15 +133,13 @@ public class IOManager implements java.io.Serializable {
         }
     }
 
-    public static BigInteger getAddressHashID(String toHash) throws Exception {
+    public static BigInteger getStringHashed(String toHash) {
         MessageDigest digest;
         byte[] hashed = null;
 
         try {
-            // Create new SHA-1 digest
             digest = MessageDigest.getInstance("SHA-1");
             hashed = digest.digest(toHash.getBytes(StandardCharsets.UTF_8));
-
         } catch (Exception e) {
             System.err.println("Error: SHA-1 Failed!");
             e.printStackTrace();
@@ -149,7 +148,7 @@ public class IOManager implements java.io.Serializable {
         return new BigInteger(1, hashed);
     }
 
-    public static String bytesToHex(byte[] bytes) throws Exception {
+    public static String bytesToHex(byte[] bytes) {
         char[] hexChars = new char[bytes.length * 2];
         for (int j = 0; j < bytes.length; j++) {
             int v = bytes[j] & 0xFF;
@@ -159,14 +158,24 @@ public class IOManager implements java.io.Serializable {
         return new String(hexChars);
     }
 
-    public static String getFileHashID(String path) throws Exception {
+    public static String getFileHashID(String path) {
         File file = new File(path);
         Path p = Paths.get(file.getAbsolutePath());
 
-        BasicFileAttributes attr = Files.readAttributes(p, BasicFileAttributes.class);
-        MessageDigest digest = MessageDigest.getInstance("SHA-1");
-        String toHash = file.getName() + attr.creationTime().toString() + attr.lastModifiedTime().toString();
+        try {
+            BasicFileAttributes attr = Files.readAttributes(p, BasicFileAttributes.class);
 
-        return bytesToHex(digest.digest(toHash.getBytes(StandardCharsets.UTF_8)));
+            MessageDigest digest = MessageDigest.getInstance("SHA-1");
+            String toHash = file.getName() + attr.creationTime().toString() + attr.lastModifiedTime().toString();
+
+            return bytesToHex(digest.digest(toHash.getBytes(StandardCharsets.UTF_8)));
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+
+        return null;
     }
 }

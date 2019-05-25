@@ -3,18 +3,18 @@ package service;
 import source.ChordNode;
 
 public class Peer {
-
+    // Andre 10.227.147.184
     public static void main(String args[]) throws Exception {
         if (args.length == 0) { // test
-            new ChordNode("10.227.148.112", "9876"); // <my pc ip> <port>
+            new ChordNode("192.168.1.73", "9876"); // <my pc ip> <port>
         } else if (args.length == 1) { // new chord test
-            new ChordNode("10.227.148.112", args[0], "10.227.148.112", "9876"); // <my pc ip> <port> <existing ip>
-                                                                                // <existing
+            new ChordNode("192.168.1.73", args[0], "192.168.1.73", "9876"); // <my pc ip> <port> <existing ip>
+                                                                            // <existing
             // port>
         } else if (args.length == 1) { // chord first node
-            new ChordNode("10.227.148.112", args[0]);
+            new ChordNode("192.168.1.73", args[0]);
         } else if (args.length == 3) { // new chord and existing given
-            new ChordNode("10.227.148.112", args[0], args[1], args[2]);
+            new ChordNode("192.168.1.73", args[0], args[1], args[2]);
         } else if (args.length == 4) { // new chord and existing given
             new ChordNode(args[0], args[1], args[2], args[3]);
         } else {

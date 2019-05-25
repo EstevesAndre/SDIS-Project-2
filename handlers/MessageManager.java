@@ -7,7 +7,7 @@ import java.math.BigInteger;
 public abstract class MessageManager {
 
     public enum Type {
-        STORED, PUTCHUNK, DELETE, GETCHUNK, CHUNK, REMOVED, JOINED, // first project types
+        STORED, PUTCHUNK, DELETE, GETCHUNK, CHUNK, REMOVED, JOINED, GET_FILE_INFO, FILE_INFO, // first project types
         SUCCESSOR, PREDECESSOR, KEY, YOUR_PREDECESSOR, OK, ERROR
     }
 
@@ -25,11 +25,9 @@ public abstract class MessageManager {
             else
                 return (type + " " + ID + " " + args[0] + " " + args[1]).getBytes();
         case YOUR_PREDECESSOR:
-            return (type + " " + ID + " " + args[0] + " " + args[1]).getBytes();
         case SUCCESSOR:
             return (type + " " + ID + " " + args[0] + " " + args[1]).getBytes();
         case OK:
-            return (type + "").getBytes();
         case ERROR:
             return (type + "").getBytes();
         default:
@@ -46,33 +44,20 @@ public abstract class MessageManager {
         return new String(response).trim().split("\\s+");
     }
 
-    public static byte[] createApplicationHeader(Type type, String fileID, int chunkNumber, int replicationDegree) {
+    public static byte[] createApplicationHeader(Type type, String fileID, BigInteger file_BigInteger, int chunkNumber,
+            int replicationDegree) {
         switch (type) {
         case PUTCHUNK:
             return (type + " " + fileID + " " + chunkNumber + " " + replicationDegree + "\r\n\r\n").getBytes();
         case STORED:
+        case GETCHUNK:
             return (type + " " + fileID + " " + chunkNumber).getBytes();
         case DELETE:
-            return "OK".getBytes();
-        case GETCHUNK:
-            return "OK".getBytes();
+            return (type + " " + fileID).getBytes();
+        case GET_FILE_INFO:
+            return (type + " " + file_BigInteger).getBytes();
         default:
             throw new IllegalArgumentException("Invalid message type for the request: " + type);
         }
     }
-
-    // public String createHeader(String messageType, String fileID, int
-    // chunkNumber) {
-    // return messageType + " " + this.version + " " + this.peerID + " " + fileID +
-    // " " + chunkNumber + "\r\n\r\n";
-    // }
-
-    // public String createHeader(String messageType, String fileID) {
-    // return messageType + " " + this.version + " " + this.peerID + " " + fileID +
-    // "\r\n\r\n";
-    // }
-
-    // public String createHeader(String messageType) {
-    // return messageType + " " + this.version + " " + this.peerID + "\r\n\r\n";
-    // }
 }

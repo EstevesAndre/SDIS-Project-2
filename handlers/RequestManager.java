@@ -3,6 +3,7 @@ package handlers;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
@@ -44,7 +45,7 @@ public abstract class RequestManager {
 
         SSLSocket socket = send(IPAddress, IPPort, request);
         if (socket == null) {
-            System.out.println("SOCKET NULL");
+            // ystem.out.println("SOCKET NULL");
             return null;
         }
         byte[] response = null;
@@ -109,7 +110,7 @@ public abstract class RequestManager {
         case "RESTORE":
             return node.handleRestoreRequest();
         case "DELETE":
-            return node.handleDeleteRequest();
+            return node.handleDeleteRequest(received[1]);
         case "DELETENH":
             return node.handleDeleteNhRequest();
         case "RECLAIM":
@@ -138,7 +139,7 @@ public abstract class RequestManager {
         System.out.println("Splited file");
 
         for (int i = 0; i < chunks.size(); i++) {
-            byte[] header = MessageManager.createApplicationHeader(MessageManager.Type.PUTCHUNK, fileID,
+            byte[] header = MessageManager.createApplicationHeader(MessageManager.Type.PUTCHUNK, fileID, null,
                     chunks.get(i).getId(), rd);
             byte[] putChunk = new byte[header.length + chunks.get(i).getSize()];
             System.arraycopy(header, 0, putChunk, 0, header.length);
@@ -161,7 +162,26 @@ public abstract class RequestManager {
     public static void restoreRequest(String address, String port, String path) {
     }
 
-    public static void deleteRequest(String address, String port, String path) {
+    public static void deleteRequest(String address, String port, String filename) {
+        if (filename == null) {
+            if (ChordNode.debug2)
+                System.err.println("Wrong number of arguments for DELETE operation\n");
+            return;
+        }
+
+        byte[] request = MessageManager.createApplicationHeader(MessageManager.Type.DELETE, filename, null, 0, 0);
+        byte[] response = RequestManager.sendRequest(address, Integer.parseInt(port), request);
+
+        if (response == null) {
+            if (ChordNode.debug2)
+                System.out.println("Couldn't connect to the given Address + Port");
+            return;
+        }
+
+        if (ChordNode.debug2)
+            System.out.println(new String(response));
+        if (ChordNode.debug2)
+            System.out.println("File " + filename + " DELETED!");
     }
 
     public static void deleteNhRequest(String address, String port, String path) {
