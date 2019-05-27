@@ -7,8 +7,8 @@ import java.math.BigInteger;
 public abstract class MessageManager {
 
     public enum Type {
-        STORED, BACKUP, PUTCHUNK, DELETE, GETCHUNK, CHUNK, REMOVED, JOINED, GET_FILE_INFO, FILE_INFO, // first
-                                                                                                      // project
+        STORED, BACKUP, PUTCHUNK, DELETE_FILE, DELETE_CHUNK, GETCHUNK, CHUNK, REMOVED, JOINED, GET_FILE_INFO, FILE_INFO, // first
+        // project
         // types
         SUCCESSOR, PREDECESSOR, KEY, YOUR_PREDECESSOR, OK, ERROR
     }
@@ -57,8 +57,10 @@ public abstract class MessageManager {
         case STORED:
         case GETCHUNK:
             return (type + " " + keyBigInteger + " " + chunkNumber).getBytes();
-        case DELETE:
+        case DELETE_FILE:
             return (type + " " + fileID).getBytes();
+        case DELETE_CHUNK:
+            return (type + " " + keyBigInteger).getBytes();
         case FILE_INFO:
             return (type + " " + keyBigInteger + " " + chunkNumber + " " + replicationDegree).getBytes();
         case GET_FILE_INFO:

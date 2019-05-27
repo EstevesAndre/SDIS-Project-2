@@ -210,4 +210,15 @@ public class IOManager implements java.io.Serializable {
 
         return null;
     }
+
+    public static void deleteChunk(String path) {
+
+        try {
+            Path filePath = Paths.get(path);
+            if (Files.exists(filePath))
+                Files.delete(filePath);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }

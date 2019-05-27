@@ -64,7 +64,7 @@ public class ChordNode {
      */
     private ScheduledThreadPoolExecutor executor;
 
-    // KEY <Replication Degree used , Number of Chunks>
+    // KEY <Number of Chunks, Replication Degree used>
     private ConcurrentHashMap<BigInteger, AbstractMap.SimpleEntry<Integer, Integer>> filesInfo;
 
     // < Chunk's key, Chunk number >
@@ -464,9 +464,8 @@ public class ChordNode {
         BigInteger chunkID = new BigInteger(parts[1]);
         int chunkNr = Integer.parseInt(parts[2]);
 
-        if(!storedChunks.contains(chunkID)) {
+        if (!storedChunks.contains(chunkID)) {
             storedChunks.put(chunkID, chunkNr);
-            // TODO
             this.storeChunk(chunkID, chunkcontent);
         }
 
@@ -478,6 +477,20 @@ public class ChordNode {
 
         // CHANGE
         IOManager.storeChunk(path, chunkID.toString(), content);
+    }
+
+    public byte[] deleteChunk(String chunkID) {
+
+        BigInteger key = new BigInteger(chunkID);
+
+        if (storedChunks.containsKey(key)) {
+            String path = this.getAddress().replace('.', '_') + "/" + this.getPort() + "/" + key;
+
+            IOManager.deleteChunk(path);
+            storedChunks.remove(key);
+        }
+
+        return MessageManager.createHeader(MessageManager.Type.OK, null, null);
     }
 
     public byte[] handleBackupRequest(byte[] content) {
@@ -538,6 +551,7 @@ public class ChordNode {
 
         byte[] fileInfoRequest = MessageManager.createApplicationHeader(MessageManager.Type.GET_FILE_INFO, null,
                 fileHash, 0, 0);
+
         byte[] fileInfo = RequestManager.sendRequest(fileSuccessor.getAddress(), fileSuccessor.getPort(),
                 fileInfoRequest);
 
@@ -552,34 +566,37 @@ public class ChordNode {
             System.err.println("File not backed up (2)");
             return MessageManager.createHeader(MessageManager.Type.ERROR, fileHash, null);
         }
-
+        // KEY <Number of Chunks, Replication Degree used>
+        int numberChunks = Integer.parseInt(fileInfoParts[2]);
+        int rdUsed = Integer.parseInt(fileInfoParts[3]);
+        String filehashname = IOManager.getFileHashID(filename);
         // SEND request to other nodes to delete file
-        for (int i = 0; i < Integer.parseInt(fileInfoParts[1]); i++) {
+        for (int i = 0; i < numberChunks; i++) {
+            for (int j = 0; j < rdUsed; j++) {
 
-            BigInteger chunkKey = new BigInteger(fileHash.toString() + "_" + i);
+                BigInteger chunkKey = IOManager.getStringHashed(filehashname + i + j).shiftRight(1);
+                Finger chunkSuccessor = this.findSuccessor(chunkKey);
 
-            Finger chunkSuccessor = this.findSuccessor(chunkKey);
+                if (chunkSuccessor == null) {
+                    System.err.println("No successor for chunk" + i);
+                    return MessageManager.createHeader(MessageManager.Type.ERROR, fileHash, null);
+                }
 
-            if (chunkSuccessor == null) {
-                System.err.println("No successor for chunk" + i);
-                return MessageManager.createHeader(MessageManager.Type.ERROR, fileHash, null);
+                System.out.println("Chunk" + i + " successor " + chunkSuccessor);
+
+                byte[] chunkDeleteRequest = MessageManager.createApplicationHeader(MessageManager.Type.DELETE_CHUNK,
+                        null, chunkKey, 0, 0);
+                byte[] chunkDeleteResponse = RequestManager.sendRequest(chunkSuccessor.getAddress(),
+                        chunkSuccessor.getPort(), chunkDeleteRequest);
+
+                if (chunkDeleteResponse == null) {
+                    System.err.println("Failed to Delete chunk" + i);
+                    return MessageManager.createHeader(MessageManager.Type.ERROR, chunkKey, null);
+                }
+
+                if (MessageManager.parseResponse(chunkDeleteResponse)[0].equals("ERROR"))
+                    return MessageManager.createHeader(MessageManager.Type.ERROR, chunkKey, null);
             }
-
-            System.out.println("Chunk" + i + " successor " + chunkSuccessor);
-
-            byte[] chunkDeleteRequest = MessageManager.createApplicationHeader(MessageManager.Type.DELETE, null,
-                    chunkKey, 0, 0);
-            byte[] chunkDeleteResponse = RequestManager.sendRequest(chunkSuccessor.getAddress(),
-                    chunkSuccessor.getPort(), chunkDeleteRequest);
-
-            if (fileInfo == null) {
-                System.err.println("Failed to Delete chunk" + i);
-                return MessageManager.createHeader(MessageManager.Type.ERROR, chunkKey, null);
-            }
-
-            if (MessageManager.parseResponse(chunkDeleteResponse)[0].equals("ERROR"))
-                return MessageManager.createHeader(MessageManager.Type.ERROR, chunkKey, null);
-
         }
 
         return MessageManager.createHeader(MessageManager.Type.OK, null, null);
@@ -595,29 +612,34 @@ public class ChordNode {
 
     public byte[] handleGetFileInfo(String[] received) {
         // GET_FILE_INFO fileHash
-
         if (received.length != 2) {
             System.err.println("Invalid request!");
             return MessageManager.createHeader(MessageManager.Type.ERROR, null, null);
         }
         BigInteger fileHash = new BigInteger(received[1]);
-
         if (filesInfo.containsKey(fileHash)) {
-            // Integer rd = filesInfo.get(fileHash);
-            // return MessageManager.createApplicationHeader(MessageManager.Type.FILE_INFO,
-            // null, fileHash, 0, rd);
-        } else {
-            return MessageManager.createHeader(MessageManager.Type.ERROR, null, null);
+            AbstractMap.SimpleEntry<Integer, Integer> value = filesInfo.get(fileHash);
+
+            return MessageManager.createApplicationHeader(MessageManager.Type.FILE_INFO, null, fileHash, value.getKey(),
+                    value.getValue());
         }
-        return null;
+
+        return MessageManager.createHeader(MessageManager.Type.ERROR, null, null);
     }
 
     public byte[] handleSaveFileInfoRequest(String[] received) {
-        // if (filesInfo.put(new BigInteger(received[1]), Integer.parseInt(received[2]))
-        // != null) {
-        // return MessageManager.createHeader(MessageManager.Type.ERROR, null, null);
-        // }
 
-        return MessageManager.createHeader(MessageManager.Type.OK, null, null);
+        BigInteger key = new BigInteger(received[1]);
+
+        if (filesInfo.containsKey(key)) {
+            filesInfo.remove(key);
+        }
+
+        if (filesInfo.put(key, new AbstractMap.SimpleEntry<Integer, Integer>(Integer.parseInt(received[2]),
+                Integer.parseInt(received[3]))) != null) {
+            return MessageManager.createHeader(MessageManager.Type.ERROR, null, null);
+        }
+
+        return MessageManager.createApplicationHeader(MessageManager.Type.STORED, null, null, 0, 0);
     }
 }

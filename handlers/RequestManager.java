@@ -44,8 +44,9 @@ public abstract class RequestManager {
     public static byte[] sendRequest(String IPAddress, int IPPort, byte[] request) {
 
         SSLSocket socket = send(IPAddress, IPPort, request);
+
         if (socket == null) {
-            // ystem.out.println("SOCKET NULL");
+            // system.out.println("SOCKET NULL");
             return null;
         }
         byte[] response = null;
@@ -109,8 +110,10 @@ public abstract class RequestManager {
             return node.handleBackupRequest(request);
         case "RESTORE":
             return node.handleRestoreRequest();
-        case "DELETE":
+        case "DELETE_FILE":
             return node.handleDeleteRequest(received[1]);
+        case "DELETE_CHUNK":
+            return node.deleteChunk(received[1]);
         case "RECLAIM":
             return node.handleReclaimRequest();
         case "STATE":
@@ -132,11 +135,11 @@ public abstract class RequestManager {
 
         String fileID = IOManager.getFileHashID(file);
         ArrayList<Chunk> chunks = IOManager.splitFile(fileID, file, rd);
-        System.out.println("Splited file");
+        System.out.println("Splited file " + fileID);
 
         for (int i = 0; i < chunks.size(); i++) {
             for (int j = 0; j < rd; j++) {
-                BigInteger chunkID = IOManager.getStringHashed(file + i + j).shiftRight(1);
+                BigInteger chunkID = IOManager.getStringHashed(fileID + i + j).shiftRight(1);
 
                 byte[] header = MessageManager.createApplicationHeader(MessageManager.Type.BACKUP, null, chunkID,
                         chunks.get(i).getId(), rd);
@@ -192,7 +195,9 @@ public abstract class RequestManager {
             return;
         }
 
-        byte[] request = MessageManager.createApplicationHeader(MessageManager.Type.DELETE, filename, null, 0, 0);
+        String fileID = IOManager.getFileHashID(filename);
+
+        byte[] request = MessageManager.createApplicationHeader(MessageManager.Type.DELETE_FILE, filename, null, 0, 0);
         byte[] response = RequestManager.sendRequest(address, Integer.parseInt(port), request);
 
         if (response == null) {
