@@ -524,9 +524,6 @@ public class ChordNode {
 
         BigInteger fileHash = IOManager.getStringHashed(filename);
         // requests for the filename owner to get the number of chunks
-        // byte[] fileRequest =
-        // MessageManager.createApplicationHeader(MessageManager.Type.GET_FILE_INFO,
-        // null, fileHash, 0, 0);
 
         Finger fileSuccessor = this.findSuccessor(fileHash);
         if (fileSuccessor == null) {

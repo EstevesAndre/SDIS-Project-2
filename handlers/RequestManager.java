@@ -134,8 +134,8 @@ public abstract class RequestManager {
         ArrayList<Chunk> chunks = IOManager.splitFile(fileID, file, rd);
         System.out.println("Splited file");
 
-        for (int i = 0; i < 1; i++) {
-            for (int j = 0; j < 1; j++) {
+        for (int i = 0; i < chunks.size(); i++) {
+            for (int j = 0; j < rd; j++) {
                 BigInteger chunkID = IOManager.getStringHashed(file + i + j).shiftRight(1);
 
                 byte[] header = MessageManager.createApplicationHeader(MessageManager.Type.BACKUP, null, chunkID,
@@ -170,9 +170,6 @@ public abstract class RequestManager {
         System.out.println("Finished BACKUP");
     }
 
-    public static void backupNhRequest(String address, String port, String path, String rd) {
-    }
-
     public static void restoreRequest(String address, String port, String path) {
     }
 
@@ -200,9 +197,6 @@ public abstract class RequestManager {
             else
                 System.out.println("File " + filename + " DELETED!");
         }
-    }
-
-    public static void deleteNhRequest(String address, String port, String path) {
     }
 
     public static void reclaimRequest(String address, String port, String path) {

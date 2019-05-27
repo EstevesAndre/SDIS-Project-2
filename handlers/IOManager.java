@@ -136,43 +136,33 @@ public class IOManager implements java.io.Serializable {
 
     public static void storeChunk(String pathString, String filename, byte[] content) {
 
-        System.out.println(pathString);
-
-        Path path = Paths.get(pathString);
         try {
+            Path path = Paths.get(pathString);
 
-            if (Files.exists(path))
-                System.out.println("Chunk is already stored");
-            else
+            if (!Files.exists(path))
                 Files.createDirectories(path);
 
-            Path writepath = Paths.get(path + "/" + filename);
+            FileOutputStream fout;
+            fout = new FileOutputStream(pathString + '/' + filename);
 
-            BufferedWriter writer = Files.newBufferedWriter(writepath, Charset.forName("UTF-8"));
+            FileChannel fc = fout.getChannel();
 
-            writer.write("To be, or not to be. That is the question.");
-        } catch (IOException ex) {
-            ex.printStackTrace();
+            ByteBuffer buffer = ByteBuffer.allocate(MAX_CHUNK_SIZE);
+
+            for (int i = 0; i < content.length; ++i) {
+                buffer.put(content[i]);
+            }
+
+            buffer.flip();
+
+            fc.write(buffer);
+
+            fout.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-
-        // try {
-        // FileOutputStream fout = new FileOutputStream(file);
-        // FileChannel fc = fout.getChannel();
-        // ByteBuffer buffer = ByteBuffer.allocate(MAX_CHUNK_SIZE);
-
-        // buffer.put(content);
-        // buffer.flip();
-        // fc.write(buffer);
-        // buffer.clear();
-
-        // fout.close();
-        // } catch (FileNotFoundException e1) {
-        // e1.printStackTrace();
-        // System.err.println("Error while saving chunk\n");
-        // } catch (IOException e) {
-        // e.printStackTrace();
-        // System.err.println("Error while saving chunk\n");
-        // }
     }
 
     public static BigInteger getStringHashed(String toHash) {
