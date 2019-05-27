@@ -2,8 +2,12 @@ package source;
 
 import java.awt.TrayIcon.MessageType;
 import java.math.BigInteger;
+import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -61,6 +65,10 @@ public class ChordNode {
      */
     private ScheduledThreadPoolExecutor executor;
 
+    // private ConcurrentHashMap<AbstractMap.SimpleEntry<BigInteger, Integer>,
+    // Chunk> storedChunks;
+    private Map<BigInteger, Integer> filesInfo;
+
     /**
      * Constructor of the first chord node to enter the ring (starting node)
      *
@@ -114,6 +122,7 @@ public class ChordNode {
     private void initialize() throws Exception {
         this.executor = new ScheduledThreadPoolExecutor(4);
 
+        filesInfo = new HashMap<BigInteger, Integer>();
         fingers = new HashMap<Integer, Finger>(FINGERS_SIZE);
         initiateSystemConfigs();
 
@@ -476,9 +485,58 @@ public class ChordNode {
         // null, fileHash, 0, 0);
 
         Finger fileSuccessor = this.findSuccessor(fileHash);
+        if (fileSuccessor == null) {
+            System.err.println("File not backed up");
+            return MessageManager.createHeader(MessageManager.Type.ERROR, fileHash, null);
+        }
+
         System.out.println("File successor " + fileSuccessor);
+
+        byte[] fileInfoRequest = MessageManager.createApplicationHeader(MessageManager.Type.GET_FILE_INFO, null,
+                fileHash, 0, 0);
+        byte[] fileInfo = RequestManager.sendRequest(fileSuccessor.getAddress(), fileSuccessor.getPort(),
+                fileInfoRequest);
+
+        if (fileInfo == null) {
+            System.err.println("Failed to get file Info");
+            return MessageManager.createHeader(MessageManager.Type.ERROR, fileHash, null);
+        }
+
+        String[] fileInfoParts = MessageManager.parseResponse(fileInfo);
+
+        if (fileInfoParts[0].equals("ERROR")) {
+            System.err.println("File not backed up");
+            return MessageManager.createHeader(MessageManager.Type.ERROR, fileHash, null);
+        }
+
         // SEND request to other nodes to delete file
-        // byte[] response = RequestManager.sendRequest(IPAddress, IPPort, request)
+        for (int i = 0; i < Integer.parseInt(fileInfoParts[1]); i++) {
+
+            BigInteger chunkKey = new BigInteger(fileHash.toString() + "_" + i);
+
+            Finger chunkSuccessor = this.findSuccessor(chunkKey);
+
+            if (chunkSuccessor == null) {
+                System.err.println("No successor for chunk" + i);
+                return MessageManager.createHeader(MessageManager.Type.ERROR, fileHash, null);
+            }
+
+            System.out.println("Chunk" + i + " successor " + chunkSuccessor);
+
+            byte[] chunkDeleteRequest = MessageManager.createApplicationHeader(MessageManager.Type.DELETE, null,
+                    chunkKey, 0, 0);
+            byte[] chunkDeleteResponse = RequestManager.sendRequest(chunkSuccessor.getAddress(),
+                    chunkSuccessor.getPort(), chunkDeleteRequest);
+
+            if (fileInfo == null) {
+                System.err.println("Failed to Delete chunk" + i);
+                return MessageManager.createHeader(MessageManager.Type.ERROR, chunkKey, null);
+            }
+
+            if (MessageManager.parseResponse(chunkDeleteResponse)[0].equals("ERROR"))
+                return MessageManager.createHeader(MessageManager.Type.ERROR, chunkKey, null);
+
+        }
 
         return MessageManager.createHeader(MessageManager.Type.OK, null, null);
     }
@@ -493,5 +551,24 @@ public class ChordNode {
 
     public byte[] handleStateRequest() {
         return "OK".getBytes();
+    }
+
+    public byte[] handleGetFileInfo(String[] received) {
+        // GET_FILE_INFO fileHash
+
+        if (received.length != 2) {
+            System.err.println("Invalid request!");
+            return MessageManager.createHeader(MessageManager.Type.ERROR, null, null);
+        }
+        BigInteger fileHash = new BigInteger(received[1]);
+
+        if (filesInfo.containsKey(fileHash)) {
+            Integer rd = filesInfo.get(fileHash);
+            if (rd == null)
+                return MessageManager.createHeader(MessageManager.Type.ERROR, null, null);
+            return MessageManager.createApplicationHeader(MessageManager.Type.FILE_INFO, null, null, 0, rd);
+        } else {
+            return MessageManager.createHeader(MessageManager.Type.ERROR, null, null);
+        }
     }
 }

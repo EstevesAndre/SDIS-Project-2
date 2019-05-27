@@ -44,7 +44,7 @@ public abstract class MessageManager {
         return new String(response).trim().split("\\s+");
     }
 
-    public static byte[] createApplicationHeader(Type type, String fileID, BigInteger file_BigInteger, int chunkNumber,
+    public static byte[] createApplicationHeader(Type type, String fileID, BigInteger keyBigInteger, int chunkNumber,
             int replicationDegree) {
         switch (type) {
         case PUTCHUNK:
@@ -53,9 +53,11 @@ public abstract class MessageManager {
         case GETCHUNK:
             return (type + " " + fileID + " " + chunkNumber).getBytes();
         case DELETE:
-            return (type + " " + fileID).getBytes();
+            return (type + " " + keyBigInteger).getBytes();
         case GET_FILE_INFO:
-            return (type + " " + file_BigInteger).getBytes();
+            return (type + " " + keyBigInteger).getBytes();
+        case FILE_INFO:
+            return (type + " " + replicationDegree).getBytes();
         default:
             throw new IllegalArgumentException("Invalid message type for the request: " + type);
         }

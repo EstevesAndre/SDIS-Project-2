@@ -117,6 +117,8 @@ public abstract class RequestManager {
             return node.handleReclaimRequest();
         case "STATE":
             return node.handleStateRequest();
+        case "GET_FILE_INFO":
+            return node.handleGetFileInfo(received);
         default:
             throw new IllegalArgumentException("Invalid message type for the request: " + received[0]);
         }
