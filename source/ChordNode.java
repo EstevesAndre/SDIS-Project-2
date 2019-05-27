@@ -4,6 +4,7 @@ import java.math.BigInteger;
 import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -17,7 +18,6 @@ import handlers.Chunk;
 import handlers.IOManager;
 import handlers.MessageManager;
 import handlers.RequestManager;
-import javafx.util.Pair;
 
 public class ChordNode {
 
@@ -65,9 +65,10 @@ public class ChordNode {
     private ScheduledThreadPoolExecutor executor;
 
     // KEY <Replication Degree used , Number of Chunks>
-    private ConcurrentHashMap<BigInteger, Pair<Integer, Integer>> filesInfo;
+    private ConcurrentHashMap<BigInteger, AbstractMap.SimpleEntry<Integer, Integer>> filesInfo;
 
-    private ConcurrentHashMap<AbstractMap.SimpleEntry<BigInteger, Integer>, Chunk> storedChunks;
+    // < Chunk's key, Chunk number >
+    private ConcurrentHashMap<BigInteger, Integer> storedChunks;
 
     /**
      * Constructor of the first chord node to enter the ring (starting node)
@@ -122,8 +123,8 @@ public class ChordNode {
     private void initialize() throws Exception {
         this.executor = new ScheduledThreadPoolExecutor(4);
 
-        filesInfo = new ConcurrentHashMap<BigInteger, Pair<Integer, Integer>>();
-        storedChunks = new ConcurrentHashMap<AbstractMap.SimpleEntry<BigInteger, Integer>, Chunk>();
+        filesInfo = new ConcurrentHashMap<BigInteger, AbstractMap.SimpleEntry<Integer, Integer>>();
+        storedChunks = new ConcurrentHashMap<>();
         fingers = new HashMap<Integer, Finger>(FINGERS_SIZE);
         initiateSystemConfigs();
 
@@ -460,12 +461,14 @@ public class ChordNode {
         byte[] chunkcontent = Arrays.copyOfRange(content, splitIndex, content.length);
         String[] parts = new String(content, 0, splitIndex).trim().split("\\s+");
 
-        // TODO
-        // to create key value concurrent hash map
         BigInteger chunkID = new BigInteger(parts[1]);
         int chunkNr = Integer.parseInt(parts[2]);
 
-        this.storeChunk(chunkID, chunkcontent);
+        if(!storedChunks.contains(chunkID)) {
+            storedChunks.put(chunkID, chunkNr);
+            // TODO
+            this.storeChunk(chunkID, chunkcontent);
+        }
 
         return MessageManager.createHeader(MessageManager.Type.OK, null, null);
     }
