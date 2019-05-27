@@ -1,6 +1,7 @@
 package source;
 
 import java.math.BigInteger;
+import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -12,9 +13,11 @@ import threads.CheckPredecessor;
 import threads.CheckSuccessor;
 import threads.Listener;
 import threads.x;
+import handlers.Chunk;
 import handlers.IOManager;
 import handlers.MessageManager;
 import handlers.RequestManager;
+import javafx.util.Pair;
 
 public class ChordNode {
 
@@ -61,14 +64,10 @@ public class ChordNode {
      */
     private ScheduledThreadPoolExecutor executor;
 
-    // private ConcurrentHashMap<AbstractMap.SimpleEntry<BigInteger, Integer>,
-    // Chunk> storedChunks;
+    // KEY <Replication Degree used , Number of Chunks>
+    private ConcurrentHashMap<BigInteger, Pair<Integer, Integer>> filesInfo;
 
-    // RD + chunk number
-    private ConcurrentHashMap<BigInteger, Integer> filesInfo;
-    // TODO
-    // private ConcurrentHashMap<AbstractMap.SimpleEntry<BigInteger, Integer>,
-    // Chunk> storedChunks;
+    private ConcurrentHashMap<AbstractMap.SimpleEntry<BigInteger, Integer>, Chunk> storedChunks;
 
     /**
      * Constructor of the first chord node to enter the ring (starting node)
@@ -123,7 +122,8 @@ public class ChordNode {
     private void initialize() throws Exception {
         this.executor = new ScheduledThreadPoolExecutor(4);
 
-        filesInfo = new ConcurrentHashMap<BigInteger, Integer>();
+        filesInfo = new ConcurrentHashMap<BigInteger, Pair<Integer, Integer>>();
+        storedChunks = new ConcurrentHashMap<AbstractMap.SimpleEntry<BigInteger, Integer>, Chunk>();
         fingers = new HashMap<Integer, Finger>(FINGERS_SIZE);
         initiateSystemConfigs();
 
@@ -603,17 +603,20 @@ public class ChordNode {
         BigInteger fileHash = new BigInteger(received[1]);
 
         if (filesInfo.containsKey(fileHash)) {
-            Integer rd = filesInfo.get(fileHash);
-            return MessageManager.createApplicationHeader(MessageManager.Type.FILE_INFO, null, fileHash, 0, rd);
+            // Integer rd = filesInfo.get(fileHash);
+            // return MessageManager.createApplicationHeader(MessageManager.Type.FILE_INFO,
+            // null, fileHash, 0, rd);
         } else {
             return MessageManager.createHeader(MessageManager.Type.ERROR, null, null);
         }
+        return null;
     }
 
     public byte[] handleSaveFileInfoRequest(String[] received) {
-        if (filesInfo.put(new BigInteger(received[1]), Integer.parseInt(received[2])) != null) {
-            return MessageManager.createHeader(MessageManager.Type.ERROR, null, null);
-        }
+        // if (filesInfo.put(new BigInteger(received[1]), Integer.parseInt(received[2]))
+        // != null) {
+        // return MessageManager.createHeader(MessageManager.Type.ERROR, null, null);
+        // }
 
         return MessageManager.createHeader(MessageManager.Type.OK, null, null);
     }
