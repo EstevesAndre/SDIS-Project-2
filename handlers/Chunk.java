@@ -9,7 +9,6 @@ public class Chunk implements java.io.Serializable {
     private static final long serialVersionUID = 1L;
 
     private int id;
-    private BigInteger chordID;
     private String fileID;
     private String fileName;
     private int size;
@@ -20,16 +19,6 @@ public class Chunk implements java.io.Serializable {
 
     private HashSet<Integer> storers; // id's of the peers that backed up the chunk
 
-    public Chunk(String fileID, int id, byte[] content, int size) {
-        this.fileID = fileID;
-        this.id = id;
-        this.content = content;
-        this.size = size;
-        this.observedRD = 0;
-        storers = new HashSet<Integer>();
-        this.chordID = IOManager.getStringHashed(fileID + "_" + id);
-    }
-
     public Chunk(String fileID, int id, byte[] content, int size, int rd) {
         this.fileID = fileID;
         this.id = id;
@@ -38,7 +27,6 @@ public class Chunk implements java.io.Serializable {
         this.desiredRD = rd;
         this.observedRD = 0;
         storers = new HashSet<Integer>();
-        this.chordID = IOManager.getStringHashed(fileID + "_" + id);
     }
 
     public synchronized void storeChunk(int peerID) throws IOException {

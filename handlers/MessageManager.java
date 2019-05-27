@@ -48,14 +48,15 @@ public abstract class MessageManager {
 
     public static byte[] createApplicationHeader(Type type, String fileID, BigInteger keyBigInteger, int chunkNumber,
             int replicationDegree) {
+
         switch (type) {
         case PUTCHUNK:
-            return (type + " " + keyBigInteger + " " + chunkNumber + " " + replicationDegree + "\r\n\r\n").getBytes();
+            return (type + " " + keyBigInteger + " " + chunkNumber + "\r\n\r\n").getBytes();
         case BACKUP:
-            return (type + " " + fileID + " " + chunkNumber + " " + replicationDegree + "\r\n\r\n").getBytes();
+            return (type + " " + keyBigInteger + " " + chunkNumber + " " + replicationDegree + "\r\n\r\n").getBytes();
         case STORED:
         case GETCHUNK:
-            return (type + " " + fileID + " " + chunkNumber).getBytes();
+            return (type + " " + keyBigInteger + " " + chunkNumber).getBytes();
         case FILE_INFO:
             return (type + " " + keyBigInteger + " " + replicationDegree).getBytes();
         case DELETE:

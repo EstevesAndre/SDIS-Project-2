@@ -1,12 +1,8 @@
 package source;
 
-import java.awt.TrayIcon.MessageType;
 import java.math.BigInteger;
-import java.util.AbstractMap;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -462,13 +458,23 @@ public class ChordNode {
         }
 
         byte[] chunkcontent = Arrays.copyOfRange(content, splitIndex, content.length);
-        System.out.println(chunkcontent.length);
-        String[] received = new String(content, 0, splitIndex).trim().split("\\s+");
-        System.out.println(received[1]);
-        // type keyBigInteger chunkNumber replicationDegree
-        // TODO save content
+        String[] parts = new String(content, 0, splitIndex).trim().split("\\s+");
+
+        // TODO
+        // to create key value concurrent hash map
+        BigInteger chunkID = new BigInteger(parts[1]);
+        int chunkNr = Integer.parseInt(parts[2]);
+
+        this.storeChunk(chunkID, chunkcontent);
 
         return MessageManager.createHeader(MessageManager.Type.OK, null, null);
+    }
+
+    private void storeChunk(BigInteger chunkID, byte[] content) {
+        String path = this.getAddress().replace('.', '_') + "/" + this.getPort() + "/";
+
+        // CHANGE
+        IOManager.storeChunk(path, chunkID.toString(), content);
     }
 
     public byte[] handleBackupRequest(byte[] content) {
@@ -483,34 +489,29 @@ public class ChordNode {
         }
 
         byte[] chunkcontent = Arrays.copyOfRange(content, splitIndex, content.length);
-        String[] received = new String(content, 0, splitIndex).trim().split("\\s+");
-        int rd = Integer.parseInt(received[3]);
 
-        for (int i = 0; i < rd; i++) {
-            BigInteger chunkHash = IOManager.getStringHashed(received[1] + '_' + received[2] + '_' + i);
-            Finger fileSuccessor = this.findSuccessor(chunkHash);
+        String[] parts = new String(content, 0, splitIndex).trim().split("\\s+");
+        int chunkNr = Integer.parseInt(parts[2]);
+        BigInteger chunkID = new BigInteger(parts[1]);
 
-            byte[] saveChunkRequest = MessageManager.createApplicationHeader(MessageManager.Type.PUTCHUNK, null,
-                    chunkHash, Integer.parseInt(received[2]), rd);
+        Finger fileSuccessor = this.findSuccessor(chunkID);
 
-            byte[] putChunk = new byte[saveChunkRequest.length + chunkcontent.length];
-            System.arraycopy(saveChunkRequest, 0, putChunk, 0, saveChunkRequest.length);
-            System.arraycopy(chunkcontent, 0, putChunk, saveChunkRequest.length, chunkcontent.length);
+        byte[] saveChunkRequest = MessageManager.createApplicationHeader(MessageManager.Type.PUTCHUNK, null, chunkID,
+                chunkNr, 0);
 
-            byte[] saveChunkResponse = RequestManager.sendRequest(fileSuccessor.getAddress(), fileSuccessor.getPort(),
-                    putChunk);
+        byte[] putChunk = new byte[saveChunkRequest.length + chunkcontent.length];
+        System.arraycopy(saveChunkRequest, 0, putChunk, 0, saveChunkRequest.length);
+        System.arraycopy(chunkcontent, 0, putChunk, saveChunkRequest.length, chunkcontent.length);
 
-            String[] response = MessageManager.parseResponse(saveChunkResponse);
+        byte[] saveChunkResponse = RequestManager.sendRequest(fileSuccessor.getAddress(), fileSuccessor.getPort(),
+                putChunk);
 
-            if (response[0].equals("ERROR")) {
-                System.err.println("Chunk not backed up (2)");
-                return MessageManager.createHeader(MessageManager.Type.ERROR, chunkHash, null);
-            }
-
+        if (saveChunkResponse == null || MessageManager.parseResponse(saveChunkResponse)[0].equals("ERROR")) {
+            System.err.println("Chunk not backed up chunk" + chunkNr + " - " + chunkID);
+            return MessageManager.createHeader(MessageManager.Type.ERROR, null, null);
         }
 
-        return MessageManager.createApplicationHeader(MessageManager.Type.STORED, received[1], null,
-                Integer.parseInt(received[2]), 0);
+        return MessageManager.createApplicationHeader(MessageManager.Type.STORED, null, chunkID, chunkNr, 0);
     }
 
     public byte[] handleRestoreRequest() {

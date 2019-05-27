@@ -6,12 +6,13 @@ import java.util.AbstractMap;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
-
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -131,6 +132,47 @@ public class IOManager implements java.io.Serializable {
             e.printStackTrace();
             System.err.println("Error while restoring File\n");
         }
+    }
+
+    public static void storeChunk(String pathString, String filename, byte[] content) {
+
+        System.out.println(pathString);
+
+        Path path = Paths.get(pathString);
+        try {
+
+            if (Files.exists(path))
+                System.out.println("Chunk is already stored");
+            else
+                Files.createDirectories(path);
+
+            Path writepath = Paths.get(path + "/" + filename);
+
+            BufferedWriter writer = Files.newBufferedWriter(writepath, Charset.forName("UTF-8"));
+
+            writer.write("To be, or not to be. That is the question.");
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+
+        // try {
+        // FileOutputStream fout = new FileOutputStream(file);
+        // FileChannel fc = fout.getChannel();
+        // ByteBuffer buffer = ByteBuffer.allocate(MAX_CHUNK_SIZE);
+
+        // buffer.put(content);
+        // buffer.flip();
+        // fc.write(buffer);
+        // buffer.clear();
+
+        // fout.close();
+        // } catch (FileNotFoundException e1) {
+        // e1.printStackTrace();
+        // System.err.println("Error while saving chunk\n");
+        // } catch (IOException e) {
+        // e.printStackTrace();
+        // System.err.println("Error while saving chunk\n");
+        // }
     }
 
     public static BigInteger getStringHashed(String toHash) {
