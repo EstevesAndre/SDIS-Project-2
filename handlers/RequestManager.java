@@ -157,8 +157,7 @@ public abstract class RequestManager {
                     return;
                 }
 
-                String result = new String(response);
-                if (result.startsWith("STORED"))
+                if ((new String(response)).startsWith("STORED"))
                     System.out.println("Successfully stored chunk " + i + " with rd = " + j);
                 else {
                     System.err.println("Failed to store chunk " + i + " with rd = " + j);
@@ -167,6 +166,19 @@ public abstract class RequestManager {
 
             }
         }
+
+        // Sends file info to be store in the ring
+        byte[] fileInfo = MessageManager.createApplicationHeader(MessageManager.Type.FILE_INFO, null,
+                IOManager.getStringHashed(file), chunks.size(), rd);
+        byte[] response = RequestManager.sendRequest(address, Integer.parseInt(port), fileInfo);
+
+        if ((new String(response)).startsWith("STORED"))
+            System.out.println("Successfully stored chunk info");
+        else {
+            System.err.println("Failed to store chunk info");
+            return;
+        }
+
         System.out.println("Finished BACKUP");
     }
 
