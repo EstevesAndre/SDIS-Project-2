@@ -105,54 +105,66 @@ public abstract class RequestManager {
             return node.handleYourPredecessorRequest(received);
         case "PUTCHUNK":
             return node.handlePutchunkRequest(request);
-        case "BACKUPNH":
-            return node.handleBackupNhRequest();
+        case "BACKUP":
+            return node.handleBackupRequest(request);
         case "RESTORE":
             return node.handleRestoreRequest();
         case "DELETE":
             return node.handleDeleteRequest(received[1]);
-        case "DELETENH":
-            return node.handleDeleteNhRequest();
         case "RECLAIM":
             return node.handleReclaimRequest();
         case "STATE":
             return node.handleStateRequest();
         case "GET_FILE_INFO":
             return node.handleGetFileInfo(received);
+        case "FILE_INFO":
+            return node.handleSaveFileInfoRequest(received);
         default:
             throw new IllegalArgumentException("Invalid message type for the request: " + received[0]);
         }
     }
 
-    public static void backupRequest(String address, String port, String path, String repDegree) {
+    public static void backupRequest(String address, String port, String file, String repDegree) {
         // prepare request
         // using java NIO to open file and create chunks
 
         int rd = Integer.parseInt(repDegree);
 
-        String fileID = null;
-        ArrayList<Chunk> chunks = null;
-        try {
-            fileID = IOManager.getFileHashID(path);
-            chunks = IOManager.splitFile(fileID, path, rd);
-        } catch (Exception e1) {
-            e1.printStackTrace();
-        }
+        String fileID = IOManager.getFileHashID(file);
+        ArrayList<Chunk> chunks = IOManager.splitFile(fileID, file, rd);
         System.out.println("Splited file");
 
-        for (int i = 0; i < chunks.size(); i++) {
-            byte[] header = MessageManager.createApplicationHeader(MessageManager.Type.PUTCHUNK, fileID, null,
-                    chunks.get(i).getId(), rd);
-            byte[] putChunk = new byte[header.length + chunks.get(i).getSize()];
-            System.arraycopy(header, 0, putChunk, 0, header.length);
-            System.arraycopy(chunks.get(i).getContent(), 0, putChunk, header.length, chunks.get(i).getSize());
+        for (int i = 0; i < 1; i++) {
+            for (int j = 0; j < 1; j++) {
+                BigInteger chunkID = IOManager.getStringHashed(file + i + j).shiftRight(1);
 
-            byte[] response = RequestManager.sendRequest(address, Integer.parseInt(port), putChunk);
-            System.out.println(new String(response));
-            try {
-                Thread.sleep(50);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+                byte[] header = MessageManager.createApplicationHeader(MessageManager.Type.BACKUP, null, chunkID,
+                        chunks.get(i).getId(), rd);
+                byte[] putChunk = new byte[header.length + chunks.get(i).getSize()];
+                System.arraycopy(header, 0, putChunk, 0, header.length);
+                System.arraycopy(chunks.get(i).getContent(), 0, putChunk, header.length, chunks.get(i).getSize());
+
+                byte[] response = RequestManager.sendRequest(address, Integer.parseInt(port), putChunk);
+
+                try {
+                    Thread.sleep(50);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+                if (response == null) {
+                    System.err.println("Failed to connect...");
+                    return;
+                }
+
+                String result = new String(response);
+                if (result.startsWith("STORED"))
+                    System.out.println("Successfully stored chunk " + i + " with rd = " + j);
+                else {
+                    System.err.println("Failed to store chunk " + i + " with rd = " + j);
+                    return;
+                }
+
             }
         }
         System.out.println("Finished BACKUP");
@@ -180,10 +192,14 @@ public abstract class RequestManager {
             return;
         }
 
-        if (ChordNode.debug2)
-            System.out.println(new String(response));
-        if (ChordNode.debug2)
-            System.out.println("File " + filename + " DELETED!");
+        String strResponse = new String(response);
+
+        if (ChordNode.debug2) {
+            if (strResponse.equals("ERROR"))
+                System.out.println("File " + filename + " not deleted");
+            else
+                System.out.println("File " + filename + " DELETED!");
+        }
     }
 
     public static void deleteNhRequest(String address, String port, String path) {
