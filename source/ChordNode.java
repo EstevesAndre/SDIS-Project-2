@@ -70,7 +70,9 @@ public class ChordNode {
 
     // RD + chunk number
     private ConcurrentHashMap<BigInteger, Integer> filesInfo;
-    private ConcurrentHashMap<AbstractMap.SimpleEntry<BigInteger, Integer>, Chunk> storedChunks;
+    // TODO
+    // private ConcurrentHashMap<AbstractMap.SimpleEntry<BigInteger, Integer>,
+    // Chunk> storedChunks;
 
     /**
      * Constructor of the first chord node to enter the ring (starting node)
@@ -462,7 +464,7 @@ public class ChordNode {
         byte[] chunkcontent = Arrays.copyOfRange(content, splitIndex, content.length);
         System.out.println(chunkcontent.length);
         String[] received = new String(content, 0, splitIndex).trim().split("\\s+");
-
+        System.out.println(received[1]);
         // type keyBigInteger chunkNumber replicationDegree
         // TODO save content
 
