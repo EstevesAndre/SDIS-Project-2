@@ -67,7 +67,10 @@ public class ChordNode {
 
     // private ConcurrentHashMap<AbstractMap.SimpleEntry<BigInteger, Integer>,
     // Chunk> storedChunks;
-    private Map<BigInteger, Integer> filesInfo;
+
+    // RD + chunk number
+    private ConcurrentHashMap<BigInteger, Integer> filesInfo;
+    private ConcurrentHashMap<AbstractMap.SimpleEntry<BigInteger, Integer>, Chunk> storedChunks;
 
     /**
      * Constructor of the first chord node to enter the ring (starting node)
@@ -122,7 +125,7 @@ public class ChordNode {
     private void initialize() throws Exception {
         this.executor = new ScheduledThreadPoolExecutor(4);
 
-        filesInfo = new HashMap<BigInteger, Integer>();
+        filesInfo = new ConcurrentHashMap<BigInteger, Integer>();
         fingers = new HashMap<Integer, Finger>(FINGERS_SIZE);
         initiateSystemConfigs();
 
@@ -457,17 +460,55 @@ public class ChordNode {
         }
 
         byte[] chunkcontent = Arrays.copyOfRange(content, splitIndex, content.length);
+        System.out.println(chunkcontent.length);
         String[] received = new String(content, 0, splitIndex).trim().split("\\s+");
 
-        // TODO: requests for the successor of the chunk and then send it to the
-        // sucessor to store
+        // type keyBigInteger chunkNumber replicationDegree
+        // TODO save content
+
+        return MessageManager.createHeader(MessageManager.Type.OK, null, null);
+    }
+
+    public byte[] handleBackupRequest(byte[] content) {
+
+        // store chunk here
+        int splitIndex = 0;
+        for (int i = 0; i < content.length; i++) {
+            if (content[i] == 13) {
+                splitIndex = i + 4;
+                break;
+            }
+        }
+
+        byte[] chunkcontent = Arrays.copyOfRange(content, splitIndex, content.length);
+        String[] received = new String(content, 0, splitIndex).trim().split("\\s+");
+        int rd = Integer.parseInt(received[3]);
+
+        for (int i = 0; i < rd; i++) {
+            BigInteger chunkHash = IOManager.getStringHashed(received[1] + '_' + received[2] + '_' + i);
+            Finger fileSuccessor = this.findSuccessor(chunkHash);
+
+            byte[] saveChunkRequest = MessageManager.createApplicationHeader(MessageManager.Type.PUTCHUNK, null,
+                    chunkHash, Integer.parseInt(received[2]), rd);
+
+            byte[] putChunk = new byte[saveChunkRequest.length + chunkcontent.length];
+            System.arraycopy(saveChunkRequest, 0, putChunk, 0, saveChunkRequest.length);
+            System.arraycopy(chunkcontent, 0, putChunk, saveChunkRequest.length, chunkcontent.length);
+
+            byte[] saveChunkResponse = RequestManager.sendRequest(fileSuccessor.getAddress(), fileSuccessor.getPort(),
+                    putChunk);
+
+            String[] response = MessageManager.parseResponse(saveChunkResponse);
+
+            if (response[0].equals("ERROR")) {
+                System.err.println("Chunk not backed up (2)");
+                return MessageManager.createHeader(MessageManager.Type.ERROR, chunkHash, null);
+            }
+
+        }
 
         return MessageManager.createApplicationHeader(MessageManager.Type.STORED, received[1], null,
                 Integer.parseInt(received[2]), 0);
-    }
-
-    public byte[] handleBackupNhRequest() {
-        return "OK".getBytes();
     }
 
     public byte[] handleRestoreRequest() {
@@ -476,7 +517,7 @@ public class ChordNode {
 
     public byte[] handleDeleteRequest(String filename) {
         if (ChordNode.debug2)
-            System.out.println("DELETE " + filename + " ");
+            System.out.println("DELETE " + filename);
 
         BigInteger fileHash = IOManager.getStringHashed(filename);
         // requests for the filename owner to get the number of chunks
@@ -486,7 +527,7 @@ public class ChordNode {
 
         Finger fileSuccessor = this.findSuccessor(fileHash);
         if (fileSuccessor == null) {
-            System.err.println("File not backed up");
+            System.err.println("File not backed up (1)");
             return MessageManager.createHeader(MessageManager.Type.ERROR, fileHash, null);
         }
 
@@ -498,14 +539,14 @@ public class ChordNode {
                 fileInfoRequest);
 
         if (fileInfo == null) {
-            System.err.println("Failed to get file Info");
+            System.err.println("Failed to get file information");
             return MessageManager.createHeader(MessageManager.Type.ERROR, fileHash, null);
         }
 
         String[] fileInfoParts = MessageManager.parseResponse(fileInfo);
 
         if (fileInfoParts[0].equals("ERROR")) {
-            System.err.println("File not backed up");
+            System.err.println("File not backed up (2)");
             return MessageManager.createHeader(MessageManager.Type.ERROR, fileHash, null);
         }
 
@@ -541,10 +582,6 @@ public class ChordNode {
         return MessageManager.createHeader(MessageManager.Type.OK, null, null);
     }
 
-    public byte[] handleDeleteNhRequest() {
-        return "OK".getBytes();
-    }
-
     public byte[] handleReclaimRequest() {
         return "OK".getBytes();
     }
@@ -564,11 +601,17 @@ public class ChordNode {
 
         if (filesInfo.containsKey(fileHash)) {
             Integer rd = filesInfo.get(fileHash);
-            if (rd == null)
-                return MessageManager.createHeader(MessageManager.Type.ERROR, null, null);
-            return MessageManager.createApplicationHeader(MessageManager.Type.FILE_INFO, null, null, 0, rd);
+            return MessageManager.createApplicationHeader(MessageManager.Type.FILE_INFO, null, fileHash, 0, rd);
         } else {
             return MessageManager.createHeader(MessageManager.Type.ERROR, null, null);
         }
+    }
+
+    public byte[] handleSaveFileInfoRequest(String[] received) {
+        if (filesInfo.put(new BigInteger(received[1]), Integer.parseInt(received[2])) != null) {
+            return MessageManager.createHeader(MessageManager.Type.ERROR, null, null);
+        }
+
+        return MessageManager.createHeader(MessageManager.Type.OK, null, null);
     }
 }

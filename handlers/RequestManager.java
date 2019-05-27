@@ -105,20 +105,20 @@ public abstract class RequestManager {
             return node.handleYourPredecessorRequest(received);
         case "PUTCHUNK":
             return node.handlePutchunkRequest(request);
-        case "BACKUPNH":
-            return node.handleBackupNhRequest();
+        case "BACKUP":
+            return node.handleBackupRequest(request);
         case "RESTORE":
             return node.handleRestoreRequest();
         case "DELETE":
             return node.handleDeleteRequest(received[1]);
-        case "DELETENH":
-            return node.handleDeleteNhRequest();
         case "RECLAIM":
             return node.handleReclaimRequest();
         case "STATE":
             return node.handleStateRequest();
         case "GET_FILE_INFO":
             return node.handleGetFileInfo(received);
+        case "FILE_INFO":
+            return node.handleSaveFileInfoRequest(received);
         default:
             throw new IllegalArgumentException("Invalid message type for the request: " + received[0]);
         }
@@ -141,7 +141,7 @@ public abstract class RequestManager {
         System.out.println("Splited file");
 
         for (int i = 0; i < chunks.size(); i++) {
-            byte[] header = MessageManager.createApplicationHeader(MessageManager.Type.PUTCHUNK, fileID, null,
+            byte[] header = MessageManager.createApplicationHeader(MessageManager.Type.BACKUP, fileID, null,
                     chunks.get(i).getId(), rd);
             byte[] putChunk = new byte[header.length + chunks.get(i).getSize()];
             System.arraycopy(header, 0, putChunk, 0, header.length);
@@ -180,10 +180,14 @@ public abstract class RequestManager {
             return;
         }
 
-        if (ChordNode.debug2)
-            System.out.println(new String(response));
-        if (ChordNode.debug2)
-            System.out.println("File " + filename + " DELETED!");
+        String strResponse = new String(response);
+
+        if (ChordNode.debug2) {
+            if (strResponse.equals("ERROR"))
+                System.out.println("File " + filename + " not deleted");
+            else
+                System.out.println("File " + filename + " DELETED!");
+        }
     }
 
     public static void deleteNhRequest(String address, String port, String path) {

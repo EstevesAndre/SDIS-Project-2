@@ -166,7 +166,7 @@ public class IOManager implements java.io.Serializable {
             BasicFileAttributes attr = Files.readAttributes(p, BasicFileAttributes.class);
 
             MessageDigest digest = MessageDigest.getInstance("SHA-1");
-            String toHash = file.getName() + attr.creationTime().toString() + attr.lastModifiedTime().toString();
+            String toHash = file.getName();
 
             return bytesToHex(digest.digest(toHash.getBytes(StandardCharsets.UTF_8)));
 

@@ -51,17 +51,11 @@ public class TestApp {
         case "BACKUP":
             RequestManager.backupRequest(address, port, op1, op2);
             break;
-        case "BACKUPENH":
-            RequestManager.backupNhRequest(address, port, op1, op2);
-            break;
         case "RESTORE":
             RequestManager.restoreRequest(address, port, op1);
             break;
         case "DELETE":
             RequestManager.deleteRequest(address, port, op1);
-            break;
-        case "DELETEENH":
-            RequestManager.deleteNhRequest(address, port, op1);
             break;
         case "RECLAIM":
             RequestManager.reclaimRequest(address, port, op1);

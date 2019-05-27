@@ -7,7 +7,9 @@ import java.math.BigInteger;
 public abstract class MessageManager {
 
     public enum Type {
-        STORED, PUTCHUNK, DELETE, GETCHUNK, CHUNK, REMOVED, JOINED, GET_FILE_INFO, FILE_INFO, // first project types
+        STORED, BACKUP, PUTCHUNK, DELETE, GETCHUNK, CHUNK, REMOVED, JOINED, GET_FILE_INFO, FILE_INFO, // first
+                                                                                                      // project
+        // types
         SUCCESSOR, PREDECESSOR, KEY, YOUR_PREDECESSOR, OK, ERROR
     }
 
@@ -48,16 +50,18 @@ public abstract class MessageManager {
             int replicationDegree) {
         switch (type) {
         case PUTCHUNK:
+            return (type + " " + keyBigInteger + " " + chunkNumber + " " + replicationDegree + "\r\n\r\n").getBytes();
+        case BACKUP:
             return (type + " " + fileID + " " + chunkNumber + " " + replicationDegree + "\r\n\r\n").getBytes();
         case STORED:
         case GETCHUNK:
             return (type + " " + fileID + " " + chunkNumber).getBytes();
+        case FILE_INFO:
+            return (type + " " + keyBigInteger + " " + replicationDegree).getBytes();
         case DELETE:
-            return (type + " " + keyBigInteger).getBytes();
+            return (type + " " + fileID).getBytes();
         case GET_FILE_INFO:
             return (type + " " + keyBigInteger).getBytes();
-        case FILE_INFO:
-            return (type + " " + replicationDegree).getBytes();
         default:
             throw new IllegalArgumentException("Invalid message type for the request: " + type);
         }
