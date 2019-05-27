@@ -60,7 +60,7 @@ public abstract class MessageManager {
         case DELETE:
             return (type + " " + fileID).getBytes();
         case FILE_INFO:
-            return (type + " " + keyBigInteger + " " + replicationDegree).getBytes();
+            return (type + " " + keyBigInteger + " " + chunkNumber + " " + replicationDegree).getBytes();
         case GET_FILE_INFO:
             return (type + " " + keyBigInteger).getBytes();
         default:
