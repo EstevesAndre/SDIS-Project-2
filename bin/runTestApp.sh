@@ -5,4 +5,4 @@
 #     exit 1
 # fi
 
-java -Djavax.net.ssl.trustStore=truststore -Djavax.net.ssl.trustStorePassword=123456 service/TestApp $@
+java -Djavax.net.ssl.trustStore=truststore -Djavax.net.ssl.trustStorePassword=123456 service/TestApp 192.168.1.71 9876 $@

@@ -28,8 +28,9 @@ public class Request implements Runnable {
             input = new ObjectInputStream(socket.getInputStream());
             output = new ObjectOutputStream(socket.getOutputStream());
         } catch (IOException e) {
-            System.out.println(
-                    "Error creating input and/or output streams for socket connection OR ailed reading object from socket stream");
+            if (ChordNode.debug)
+                System.out.println(
+                        "Error creating input and/or output streams for socket connection OR ailed reading object from socket stream");
             e.printStackTrace();
         }
 

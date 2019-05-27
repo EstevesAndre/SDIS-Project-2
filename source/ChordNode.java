@@ -1,8 +1,13 @@
 package source;
 
+import java.awt.TrayIcon.MessageType;
 import java.math.BigInteger;
+import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -11,10 +16,14 @@ import threads.CheckPredecessor;
 import threads.CheckSuccessor;
 import threads.Listener;
 import threads.x;
+import handlers.IOManager;
 import handlers.MessageManager;
 import handlers.RequestManager;
 
 public class ChordNode {
+
+    public static final boolean debug = false;
+    public static final boolean debug2 = true;
 
     /**
      * Size of finger table
@@ -56,6 +65,10 @@ public class ChordNode {
      */
     private ScheduledThreadPoolExecutor executor;
 
+    // private ConcurrentHashMap<AbstractMap.SimpleEntry<BigInteger, Integer>,
+    // Chunk> storedChunks;
+    private Map<BigInteger, Integer> filesInfo;
+
     /**
      * Constructor of the first chord node to enter the ring (starting node)
      *
@@ -66,8 +79,9 @@ public class ChordNode {
     public ChordNode(String address, String port) throws Exception {
         this.key = new Finger(address, Integer.parseInt(port));
         existingNodeAddress = null;
-        System.out.println("Creating a new ring\nChord node:\n - Address -> " + this.key.getAddress() + "\n - Port -> "
-                + this.key.getPort());
+        if (ChordNode.debug)
+            System.out.println("Creating a new ring\nChord node:\n - Address -> " + this.key.getAddress()
+                    + "\n - Port -> " + this.key.getPort());
 
         this.initialize();
     }
@@ -89,10 +103,12 @@ public class ChordNode {
         if (this.key.getAddress().equals(this.existingNodeAddress) && this.key.getPort() == this.existingNodePort)
             throw new IllegalArgumentException("Existing ID is equal to new chord node... Attemp failed!");
 
-        System.out.println("Creating a new Chord node:\n - Address -> " + this.key.getAddress() + "\n - Port -> "
-                + this.key.getPort());
-        System.out.println("Known Chord node:\n - Address -> " + this.existingNodeAddress + "\n - Port -> "
-                + this.existingNodePort);
+        if (ChordNode.debug)
+            System.out.println("Creating a new Chord node:\n - Address -> " + this.key.getAddress() + "\n - Port -> "
+                    + this.key.getPort());
+        if (ChordNode.debug)
+            System.out.println("Known Chord node:\n - Address -> " + this.existingNodeAddress + "\n - Port -> "
+                    + this.existingNodePort);
 
         this.initialize();
     }
@@ -106,6 +122,7 @@ public class ChordNode {
     private void initialize() throws Exception {
         this.executor = new ScheduledThreadPoolExecutor(4);
 
+        filesInfo = new HashMap<BigInteger, Integer>();
         fingers = new HashMap<Integer, Finger>(FINGERS_SIZE);
         initiateSystemConfigs();
 
@@ -216,8 +233,10 @@ public class ChordNode {
 
         } else {
             // join node to ring
-            System.out.println("Joining node " + this.existingNodeAddress);
-            System.out.println("Finding successor...");
+            if (ChordNode.debug)
+                System.out.println("Joining node " + this.existingNodeAddress);
+            if (ChordNode.debug)
+                System.out.println("Finding successor...");
 
             byte[] request = MessageManager.createHeader(MessageManager.Type.SUCCESSOR, this.key.getID(),
                     new String[] { this.getAddress(), String.valueOf(this.getPort()) });
@@ -226,7 +245,8 @@ public class ChordNode {
             // [SUCCESSOR ID ADDRESS PORT]
 
             if (response == null) {
-                System.out.println("X Successor is now dead!");
+                if (ChordNode.debug)
+                    System.out.println("X Successor is now dead!");
                 return;
             }
 
@@ -243,7 +263,8 @@ public class ChordNode {
             }
         }
 
-        System.out.println("Finger table created");
+        if (ChordNode.debug)
+            System.out.println("Finger table created");
     }
 
     /**
@@ -258,7 +279,8 @@ public class ChordNode {
         if (this.existingNodeAddress == null)
             this.notifySuccessor();
 
-        System.out.println(this.key.getID() + " " + this.successor.getID() + " " + this.predecessor.getID());
+        if (ChordNode.debug)
+            System.out.println(this.key.getID() + " " + this.successor.getID() + " " + this.predecessor.getID());
     }
 
     /**
@@ -289,7 +311,8 @@ public class ChordNode {
             return;
 
         if (!"OK".equals(new String(response)))
-            System.out.println("ERROR OCCURRED");
+            if (ChordNode.debug)
+                System.out.println("ERROR OCCURRED");
     }
 
     /**
@@ -323,10 +346,12 @@ public class ChordNode {
         }
 
         if (this.predecessor == null) {
-            System.out.println("(1) My predecessor is now " + potential.getID());
+            if (ChordNode.debug)
+                System.out.println("(1) My predecessor is now " + potential.getID());
             this.setPredecessor(potential);
         } else if (potential.comparator(predecessor, this.key)) {
-            System.out.println("(2) My predecessor is now " + potential.getID());
+            if (ChordNode.debug)
+                System.out.println("(2) My predecessor is now " + potential.getID());
             this.setPredecessor(potential);
         }
 
@@ -392,7 +417,8 @@ public class ChordNode {
                 toSendSuccessorRequest.getPort(), request);
         // [SUCCESSOR ID ADDRESS PORT]
         if (response == null) {
-            System.out.println("Y Successor is now dead!");
+            if (ChordNode.debug)
+                System.out.println("Y Successor is now dead!");
             return this.key;
         }
 
@@ -436,7 +462,7 @@ public class ChordNode {
         // TODO: requests for the successor of the chunk and then send it to the
         // sucessor to store
 
-        return MessageManager.createApplicationHeader(MessageManager.Type.STORED, received[1],
+        return MessageManager.createApplicationHeader(MessageManager.Type.STORED, received[1], null,
                 Integer.parseInt(received[2]), 0);
     }
 
@@ -448,8 +474,71 @@ public class ChordNode {
         return "OK".getBytes();
     }
 
-    public byte[] handleDeleteRequest() {
-        return "OK".getBytes();
+    public byte[] handleDeleteRequest(String filename) {
+        if (ChordNode.debug2)
+            System.out.println("DELETE " + filename + " ");
+
+        BigInteger fileHash = IOManager.getStringHashed(filename);
+        // requests for the filename owner to get the number of chunks
+        // byte[] fileRequest =
+        // MessageManager.createApplicationHeader(MessageManager.Type.GET_FILE_INFO,
+        // null, fileHash, 0, 0);
+
+        Finger fileSuccessor = this.findSuccessor(fileHash);
+        if (fileSuccessor == null) {
+            System.err.println("File not backed up");
+            return MessageManager.createHeader(MessageManager.Type.ERROR, fileHash, null);
+        }
+
+        System.out.println("File successor " + fileSuccessor);
+
+        byte[] fileInfoRequest = MessageManager.createApplicationHeader(MessageManager.Type.GET_FILE_INFO, null,
+                fileHash, 0, 0);
+        byte[] fileInfo = RequestManager.sendRequest(fileSuccessor.getAddress(), fileSuccessor.getPort(),
+                fileInfoRequest);
+
+        if (fileInfo == null) {
+            System.err.println("Failed to get file Info");
+            return MessageManager.createHeader(MessageManager.Type.ERROR, fileHash, null);
+        }
+
+        String[] fileInfoParts = MessageManager.parseResponse(fileInfo);
+
+        if (fileInfoParts[0].equals("ERROR")) {
+            System.err.println("File not backed up");
+            return MessageManager.createHeader(MessageManager.Type.ERROR, fileHash, null);
+        }
+
+        // SEND request to other nodes to delete file
+        for (int i = 0; i < Integer.parseInt(fileInfoParts[1]); i++) {
+
+            BigInteger chunkKey = new BigInteger(fileHash.toString() + "_" + i);
+
+            Finger chunkSuccessor = this.findSuccessor(chunkKey);
+
+            if (chunkSuccessor == null) {
+                System.err.println("No successor for chunk" + i);
+                return MessageManager.createHeader(MessageManager.Type.ERROR, fileHash, null);
+            }
+
+            System.out.println("Chunk" + i + " successor " + chunkSuccessor);
+
+            byte[] chunkDeleteRequest = MessageManager.createApplicationHeader(MessageManager.Type.DELETE, null,
+                    chunkKey, 0, 0);
+            byte[] chunkDeleteResponse = RequestManager.sendRequest(chunkSuccessor.getAddress(),
+                    chunkSuccessor.getPort(), chunkDeleteRequest);
+
+            if (fileInfo == null) {
+                System.err.println("Failed to Delete chunk" + i);
+                return MessageManager.createHeader(MessageManager.Type.ERROR, chunkKey, null);
+            }
+
+            if (MessageManager.parseResponse(chunkDeleteResponse)[0].equals("ERROR"))
+                return MessageManager.createHeader(MessageManager.Type.ERROR, chunkKey, null);
+
+        }
+
+        return MessageManager.createHeader(MessageManager.Type.OK, null, null);
     }
 
     public byte[] handleDeleteNhRequest() {
@@ -462,5 +551,24 @@ public class ChordNode {
 
     public byte[] handleStateRequest() {
         return "OK".getBytes();
+    }
+
+    public byte[] handleGetFileInfo(String[] received) {
+        // GET_FILE_INFO fileHash
+
+        if (received.length != 2) {
+            System.err.println("Invalid request!");
+            return MessageManager.createHeader(MessageManager.Type.ERROR, null, null);
+        }
+        BigInteger fileHash = new BigInteger(received[1]);
+
+        if (filesInfo.containsKey(fileHash)) {
+            Integer rd = filesInfo.get(fileHash);
+            if (rd == null)
+                return MessageManager.createHeader(MessageManager.Type.ERROR, null, null);
+            return MessageManager.createApplicationHeader(MessageManager.Type.FILE_INFO, null, null, 0, rd);
+        } else {
+            return MessageManager.createHeader(MessageManager.Type.ERROR, null, null);
+        }
     }
 }
