@@ -6,6 +6,7 @@ import java.io.ObjectOutputStream;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.net.ssl.SSLSocket;
@@ -187,12 +188,12 @@ public abstract class RequestManager {
     }
 
     public static void restoreRequest(String address, String port, String file) {
-        byte[] fileInfo = MessageManager.createApplicationHeader(MessageManager.Type.GET_FILE_INFO, null, IOManager.getStringHashed(file), 0, 0);
+        byte[] fileInfo = MessageManager.createApplicationHeader(MessageManager.Type.GET_FILE_INFO, null,
+                IOManager.getStringHashed(file), 0, 0);
         byte[] response = RequestManager.sendRequest(address, Integer.parseInt(port), fileInfo);
-        
+
         if (response == null) {
-            if (ChordNode.debug)
-                System.out.println("Failed connection");
+            System.out.println("Failed connection");
             return;
         }
 
@@ -211,14 +212,28 @@ public abstract class RequestManager {
         for (int i = 0; i < numberOfChunks; i++) {
             for (int j = 0; j < rd; j++) {
                 BigInteger chunkID = IOManager.getStringHashed(fileID + i + j).shiftRight(1);
-                byte[] getChunk = MessageManager.createApplicationHeader(MessageManager.Type.GETCHUNK, null, chunkID, 0, 0);
+                byte[] getChunk = MessageManager.createApplicationHeader(MessageManager.Type.GETCHUNK, null, chunkID, 0,
+                        0);
                 byte[] chunk = RequestManager.sendRequest(address, Integer.parseInt(port), getChunk);
 
                 if (chunk == null) {
-                    if (ChordNode.debug)
-                        System.out.println("Failed connection");
+                    System.out.println("Failed connection");
                     return;
                 }
+
+                // store chunk here
+                int splitIndex = 0;
+                for (int i = 0; i < chunk.length; i++) {
+                    if (chunk[i] == 13) {
+                        splitIndex = i + 4;
+                        break;
+                    }
+                }
+
+                byte[] chunkcontent = Arrays.copyOfRange(chunk, splitIndex, chunk.length);
+                int chunkNr = Integer.parseInt(parts[2]);
+
+                System.out.println("nr: " + chunkNr + " " + chunkcontent.length);
             }
         }
 

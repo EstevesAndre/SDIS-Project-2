@@ -37,7 +37,7 @@ public abstract class MessageManager {
         }
     }
 
-    //TODO: Currently it is not being used. Remove?
+    // TODO: Currently it is not being used. Remove?
     public static byte[] createRequest(Type type, String address) {
         return null;
         // return createHeader(type, address, null);
@@ -53,6 +53,8 @@ public abstract class MessageManager {
         switch (type) {
         case PUTCHUNK:
             return (type + " " + keyBigInteger + " " + chunkNumber + "\r\n\r\n").getBytes();
+        case CHUNK:
+            return (type + " " + chunkNumber + " " + "\r\n\r\n").getBytes();
         case BACKUP:
             return (type + " " + keyBigInteger + " " + chunkNumber + " " + replicationDegree + "\r\n\r\n").getBytes();
         case STORED:

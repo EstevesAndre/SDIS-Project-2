@@ -534,25 +534,32 @@ public class ChordNode {
         BigInteger key = new BigInteger(received[1]);
         Finger succ = findSuccessor(key);
 
-        if(succ.equals(this.key)){
+        if (succ.equals(this.key)) {
             return getChunk(key);
         }
-        
+
         byte[] getChunk = MessageManager.createApplicationHeader(MessageManager.Type.GETCHUNK, null, key, 0, 0);
         return RequestManager.sendRequest(succ.getAddress(), succ.getPort(), getChunk);
     }
 
     private byte[] getChunk(BigInteger key) {
-        if(!storedChunks.containsKey(key)) {
+        if (!storedChunks.containsKey(key)) {
             return MessageManager.createHeader(MessageManager.Type.ERROR, null, null);
         }
 
         int chunkNumber = storedChunks.get(key);
 
-        System.out.println("I have chunk number " + chunkNumber);
-        // Mandar mensagem com o chunk number e o conteúdo
+        System.out.println("Restoring... I have chunk number " + chunkNumber);
+        byte[] chunkcontent = IOManager.getChunkContent(this.key, key);
 
-        return null;
+        byte[] chunkResponse = MessageManager.createApplicationHeader(MessageManager.Type.CHUNK, null, key, chunkNumber,
+                0);
+
+        byte[] getChunk = new byte[chunkResponse.length + chunkcontent.length];
+        System.arraycopy(chunkResponse, 0, getChunk, 0, chunkResponse.length);
+        System.arraycopy(chunkcontent, 0, getChunk, chunkResponse.length, chunkcontent.length);
+
+        return getChunk;
     }
 
     public byte[] handleDeleteRequest(String filename) {
