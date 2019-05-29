@@ -37,6 +37,7 @@ public abstract class MessageManager {
         }
     }
 
+    //TODO: Currently it is not being used. Remove?
     public static byte[] createRequest(Type type, String address) {
         return null;
         // return createHeader(type, address, null);
@@ -56,7 +57,7 @@ public abstract class MessageManager {
             return (type + " " + keyBigInteger + " " + chunkNumber + " " + replicationDegree + "\r\n\r\n").getBytes();
         case STORED:
         case GETCHUNK:
-            return (type + " " + keyBigInteger + " " + chunkNumber).getBytes();
+            return (type + " " + keyBigInteger).getBytes();
         case DELETE_FILE:
             return (type + " " + fileID).getBytes();
         case DELETE_CHUNK:
