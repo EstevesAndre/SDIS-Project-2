@@ -24,6 +24,7 @@ import java.security.NoSuchAlgorithmException;
 import java.math.BigInteger;
 
 import handlers.Chunk;
+import source.Finger;
 
 public class IOManager implements java.io.Serializable {
 
@@ -163,6 +164,37 @@ public class IOManager implements java.io.Serializable {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public static byte[] getChunkContent(Finger node, BigInteger fileKey) {
+
+        String path = node.getAddress().replace('.', '_') + "/" + node.getPort() + "/" + fileKey.toString();
+        byte[] content = new byte[MAX_CHUNK_SIZE];
+
+        try {
+            FileInputStream fin = new FileInputStream(path);
+            FileChannel fc = fin.getChannel();
+            ByteBuffer buffer = ByteBuffer.allocate(MAX_CHUNK_SIZE);
+
+            fc.read(buffer);
+
+            buffer.flip();
+
+            int i = 0;
+            while (buffer.remaining() > 0) {
+                content[i] = buffer.get();
+                i++;
+            }
+
+            fin.close();
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return content;
     }
 
     public static BigInteger getStringHashed(String toHash) {
