@@ -186,6 +186,35 @@ public abstract class RequestManager {
     }
 
     public static void restoreRequest(String address, String port, String path) {
+//    	//Get actual number of file chunks
+//    	int chunks = 0;
+//    	
+//    	for (int i = 0; i < chunks; i++) {
+//    		BigInteger chunkID = null; //chunkID is stored in the peer database?
+//    		
+//    		byte[] header = MessageManager.createApplicationHeader(MessageManager.Type.GETCHUNK, null, chunkID,
+//                    0 /* Do we need the chunk actual ID */, 0);
+//
+//            byte[] response = RequestManager.sendRequest(address, Integer.parseInt(port), header);
+//            
+//            try {
+//                Thread.sleep(50);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//
+//            if (response == null) {
+//                System.err.println("Failed to connect...");
+//                return;
+//            }
+//
+//            if ((new String(response)).startsWith("CHUNK"))
+//                System.out.println("Successfully restored chunk " + i);
+//            else {
+//                System.err.println("Failed to restore chunk " + i);
+//                return;
+//            }
+//    	}
     }
 
     public static void deleteRequest(String address, String port, String filename) {
