@@ -57,7 +57,7 @@ public abstract class MessageManager {
             return (type + " " + keyBigInteger + " " + chunkNumber + " " + replicationDegree + "\r\n\r\n").getBytes();
         case STORED:
         case GETCHUNK:
-            return (type + " " + keyBigInteger + "\r\n\r\n").getBytes();
+            return (type + " " + keyBigInteger).getBytes();
         case DELETE_FILE:
             return (type + " " + fileID).getBytes();
         case DELETE_CHUNK:

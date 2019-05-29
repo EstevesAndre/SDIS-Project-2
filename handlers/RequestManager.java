@@ -6,6 +6,7 @@ import java.io.ObjectOutputStream;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
@@ -108,8 +109,8 @@ public abstract class RequestManager {
             return node.handlePutchunkRequest(request);
         case "BACKUP":
             return node.handleBackupRequest(request);
-        case "RESTORE":
-            return node.handleRestoreRequest();
+        case "GETCHUNK":
+            return node.handleGetChunkRequest(received);
         case "DELETE_FILE":
             return node.handleDeleteRequest(received[1]);
         case "DELETE_CHUNK":
@@ -185,36 +186,42 @@ public abstract class RequestManager {
         System.out.println("Finished BACKUP");
     }
 
-    public static void restoreRequest(String address, String port, String path) {
-//    	//Get actual number of file chunks
-//    	int chunks = 0;
-//    	
-//    	for (int i = 0; i < chunks; i++) {
-//    		BigInteger chunkID = null; //chunkID is stored in the peer database?
-//    		
-//    		byte[] header = MessageManager.createApplicationHeader(MessageManager.Type.GETCHUNK, null, chunkID,
-//                    0 /* Do we need the chunk actual ID */, 0);
-//
-//            byte[] response = RequestManager.sendRequest(address, Integer.parseInt(port), header);
-//            
-//            try {
-//                Thread.sleep(50);
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
-//
-//            if (response == null) {
-//                System.err.println("Failed to connect...");
-//                return;
-//            }
-//
-//            if ((new String(response)).startsWith("CHUNK"))
-//                System.out.println("Successfully restored chunk " + i);
-//            else {
-//                System.err.println("Failed to restore chunk " + i);
-//                return;
-//            }
-//    	}
+    public static void restoreRequest(String address, String port, String file) {
+        byte[] fileInfo = MessageManager.createApplicationHeader(MessageManager.Type.GET_FILE_INFO, null, IOManager.getStringHashed(file), 0, 0);
+        byte[] response = RequestManager.sendRequest(address, Integer.parseInt(port), fileInfo);
+        
+        if (response == null) {
+            if (ChordNode.debug)
+                System.out.println("Failed connection");
+            return;
+        }
+
+        String[] parts = MessageManager.parseResponse(response);
+
+        if (parts[0] == "ERROR")
+            throw new IllegalArgumentException("Received error to GET_FILE_INFO");
+
+        System.out.println("Received " + new String(response));
+
+        String fileID = IOManager.getFileHashID(file);
+        int numberOfChunks = Integer.parseInt(parts[2]), rd = Integer.parseInt(parts[3]);
+
+        ConcurrentHashMap<Integer, byte[]> chunks;
+
+        for (int i = 0; i < numberOfChunks; i++) {
+            for (int j = 0; j < rd; j++) {
+                BigInteger chunkID = IOManager.getStringHashed(fileID + i + j).shiftRight(1);
+                byte[] getChunk = MessageManager.createApplicationHeader(MessageManager.Type.GETCHUNK, null, chunkID, 0, 0);
+                byte[] chunk = RequestManager.sendRequest(address, Integer.parseInt(port), getChunk);
+
+                if (chunk == null) {
+                    if (ChordNode.debug)
+                        System.out.println("Failed connection");
+                    return;
+                }
+            }
+        }
+
     }
 
     public static void deleteRequest(String address, String port, String filename) {
