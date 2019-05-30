@@ -223,9 +223,9 @@ public abstract class RequestManager {
 
                 // store chunk here
                 int splitIndex = 0;
-                for (int i = 0; i < chunk.length; i++) {
-                    if (chunk[i] == 13) {
-                        splitIndex = i + 4;
+                for (int k = 0; k < chunk.length; k++) {
+                    if (chunk[k] == 13) {
+                        splitIndex = k + 4;
                         break;
                     }
                 }
