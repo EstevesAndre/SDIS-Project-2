@@ -24,5 +24,11 @@ public class CheckFingers implements Runnable {
         }
         if (ChordNode.debug)
             System.out.println("------");
+
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 }

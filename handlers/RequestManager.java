@@ -229,6 +229,7 @@ public abstract class RequestManager {
                 }
 
                 byte[] chunkcontent = Arrays.copyOfRange(chunk, splitIndex, chunk.length);
+                System.out.println("wut " + new String(chunk));
                 String[] chunkParts = new String(chunk, 0, splitIndex).trim().split("\\s+");
 
                 int chunkNr = Integer.parseInt(chunkParts[1]);

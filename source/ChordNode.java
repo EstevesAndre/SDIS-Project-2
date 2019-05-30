@@ -121,7 +121,7 @@ public class ChordNode {
      * @throws Exception
      */
     private void initialize() throws Exception {
-        this.executor = new ScheduledThreadPoolExecutor(4);
+        this.executor = new ScheduledThreadPoolExecutor(5000);
 
         filesInfo = new ConcurrentHashMap<BigInteger, AbstractMap.SimpleEntry<Integer, Integer>>();
         storedChunks = new ConcurrentHashMap<>();
@@ -289,11 +289,11 @@ public class ChordNode {
      * initialize threads, Listener, CheckPredecessor and Successor
      */
     private void initializeThreads() {
-        executor.submit(new Listener(this));
-        executor.scheduleAtFixedRate(new CheckPredecessor(this), 0, 5, TimeUnit.SECONDS);
-        executor.scheduleAtFixedRate(new CheckSuccessor(this), 0, 2, TimeUnit.SECONDS);
-        executor.scheduleAtFixedRate(new CheckFingers(this), 0, 20, TimeUnit.SECONDS);
-        executor.scheduleAtFixedRate(new x(this), 1, 10, TimeUnit.SECONDS);
+        executor.execute(new Listener(this));
+        executor.execute(new CheckPredecessor(this));
+        executor.execute(new CheckSuccessor(this));
+        executor.execute(new CheckFingers(this));
+        executor.scheduleAtFixedRate(new x(this), 1, 5000, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -662,5 +662,13 @@ public class ChordNode {
         }
 
         return MessageManager.createApplicationHeader(MessageManager.Type.STORED, null, null, 0, 0);
+    }
+
+    public ScheduledThreadPoolExecutor getExecutor() {
+        return executor;
+    }
+
+    public void setExecutor(ScheduledThreadPoolExecutor executor) {
+        this.executor = executor;
     }
 }

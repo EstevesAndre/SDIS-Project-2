@@ -21,6 +21,17 @@ public class Request implements Runnable {
     @Override
     public void run() {
 
+        /*
+         * InputStream input = null; OutputStream output = null; try { input =
+         * talkSocket.getInputStream(); String request =
+         * Helper.inputStreamToString(input); String response = processRequest(request);
+         * if (response != null) { output = talkSocket.getOutputStream();
+         * output.write(response.getBytes()); } input.close(); } catch (IOException e) {
+         * throw new RuntimeException(
+         * "Cannot talk.\nServer port: "+local.getAddress().getPort()+"; Talker port: "
+         * +talkSocket.getPort(), e); }
+         */
+
         ObjectInputStream input = null;
         ObjectOutputStream output = null;
 
@@ -50,7 +61,9 @@ public class Request implements Runnable {
         byte[] response = RequestManager.handleRequest(node, read);
         // waits for response
         try {
-            if (response != null)
+            // long id = Thread.currentThread().getId();
+            // System.out.println("\nAQUI CRL\n" + id);
+            if (response != null)// && !socket.isOutputShutdown() && !socket.isClosed() && socket.isConnected())
                 output.writeObject(response);
             Thread.sleep(50);
             input.close();
