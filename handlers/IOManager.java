@@ -2,17 +2,14 @@ package handlers;
 
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.AbstractMap;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -91,7 +88,7 @@ public class IOManager implements java.io.Serializable {
                 }
                 buffer.clear();
 
-                chunks.add(new Chunk(fileID, partCounter, arr, bytesAmount, rd));
+                chunks.add(new Chunk(partCounter, arr, bytesAmount));
                 partCounter++;
             }
             fc.close();
