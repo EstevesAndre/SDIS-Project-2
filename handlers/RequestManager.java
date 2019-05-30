@@ -14,8 +14,6 @@ import javax.net.ssl.SSLSocketFactory;
 
 import source.ChordNode;
 
-// Class used to send and receive messages
-
 public abstract class RequestManager {
 
     public static SSLSocket makeConnection(String address, int port) throws IOException {
@@ -207,7 +205,7 @@ public abstract class RequestManager {
         String fileID = IOManager.getFileHashID(file);
         int numberOfChunks = Integer.parseInt(parts[2]), rd = Integer.parseInt(parts[3]);
 
-        ConcurrentHashMap<Integer, byte[]> chunks;
+        ConcurrentHashMap<Integer, byte[]> chunks = new ConcurrentHashMap<>();
 
         for (int i = 0; i < numberOfChunks; i++) {
             for (int j = 0; j < rd; j++) {
@@ -223,20 +221,28 @@ public abstract class RequestManager {
 
                 // store chunk here
                 int splitIndex = 0;
-                for (int i = 0; i < chunk.length; i++) {
-                    if (chunk[i] == 13) {
-                        splitIndex = i + 4;
+                for (int k = 0; k < chunk.length; k++) {
+                    if (chunk[k] == 13) {
+                        splitIndex = k + 4;
                         break;
                     }
                 }
 
                 byte[] chunkcontent = Arrays.copyOfRange(chunk, splitIndex, chunk.length);
-                int chunkNr = Integer.parseInt(parts[2]);
+                String[] chunkParts = new String(chunk, 0, splitIndex).trim().split("\\s+");
 
-                System.out.println("nr: " + chunkNr + " " + chunkcontent.length);
+                int chunkNr = Integer.parseInt(chunkParts[1]);
+
+                System.out.println(chunkParts[1] + " nr: " + chunkNr + " " + chunkcontent.length);
+                chunks.put(chunkNr, chunkcontent);
+
+                if (chunks.size() == numberOfChunks)
+                    break;
             }
         }
 
+        IOManager.restoreFile(file, chunks);
+        System.out.println("RESTORE completed");
     }
 
     public static void deleteRequest(String address, String port, String filename) {

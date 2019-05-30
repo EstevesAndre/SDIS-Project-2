@@ -106,23 +106,23 @@ public class IOManager implements java.io.Serializable {
         return chunks;
     }
 
-    public static void restoreFile(String path, String fileID, int nrChunks,
-            ConcurrentHashMap<AbstractMap.SimpleEntry<String, Integer>, byte[]> chunks) throws IOException {
+    public static void restoreFile(String pathString, ConcurrentHashMap<Integer, byte[]> chunks) {
 
         try {
-            FileOutputStream fout = new FileOutputStream("x" + path);
+            Path path = Paths.get("restored/");
+
+            if (!Files.exists(path))
+                Files.createDirectories(path);
+
+            FileOutputStream fout = new FileOutputStream("restored/" + pathString);
             FileChannel fc = fout.getChannel();
             ByteBuffer buffer = ByteBuffer.allocate(MAX_CHUNK_SIZE);
 
-            for (int chunkID = 0; chunkID < nrChunks; chunkID++) {
-                for (AbstractMap.SimpleEntry<String, Integer> key : chunks.keySet()) {
-                    if (key.getKey().equals(fileID) && key.getValue() == chunkID) {
-                        buffer.put(chunks.get(key));
-                        buffer.flip();
-                        fc.write(buffer);
-                        buffer.clear();
-                    }
-                }
+            for (int i = 0; i < chunks.size(); i++) {
+                buffer.put(chunks.get(i));
+                buffer.flip();
+                fc.write(buffer);
+                buffer.clear();
             }
 
             fout.close();
@@ -135,7 +135,8 @@ public class IOManager implements java.io.Serializable {
         }
     }
 
-    public static void storeChunk(String pathString, String filename, byte[] content) {
+    public static void storeChunk(Finger node, String filename, byte[] content) {
+        String pathString = node.getAddress().replace('.', '_') + "_" + node.getPort();
 
         try {
             Path path = Paths.get(pathString);
@@ -168,23 +169,18 @@ public class IOManager implements java.io.Serializable {
 
     public static byte[] getChunkContent(Finger node, BigInteger fileKey) {
 
-        String path = node.getAddress().replace('.', '_') + "/" + node.getPort() + "/" + fileKey.toString();
-        byte[] content = new byte[MAX_CHUNK_SIZE];
+        String path = node.getAddress().replace('.', '_') + "_" + node.getPort() + "/" + fileKey.toString();
+        byte[] content = null;
 
         try {
             FileInputStream fin = new FileInputStream(path);
             FileChannel fc = fin.getChannel();
             ByteBuffer buffer = ByteBuffer.allocate(MAX_CHUNK_SIZE);
 
-            fc.read(buffer);
-
+            int size = fc.read(buffer);
             buffer.flip();
-
-            int i = 0;
-            while (buffer.remaining() > 0) {
-                content[i] = buffer.get();
-                i++;
-            }
+            content = new byte[size];
+            buffer.get(content);
 
             fin.close();
 

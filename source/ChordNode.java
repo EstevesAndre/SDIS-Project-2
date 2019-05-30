@@ -466,17 +466,10 @@ public class ChordNode {
 
         if (!storedChunks.contains(chunkID)) {
             storedChunks.put(chunkID, chunkNr);
-            this.storeChunk(chunkID, chunkcontent);
+            IOManager.storeChunk(this.key, chunkID.toString(), chunkcontent);
         }
 
         return MessageManager.createHeader(MessageManager.Type.OK, null, null);
-    }
-
-    private void storeChunk(BigInteger chunkID, byte[] content) {
-        String path = this.getAddress().replace('.', '_') + "/" + this.getPort() + "/";
-
-        // CHANGE
-        IOManager.storeChunk(path, chunkID.toString(), content);
     }
 
     public byte[] deleteChunk(String chunkID) {
@@ -549,11 +542,11 @@ public class ChordNode {
 
         int chunkNumber = storedChunks.get(key);
 
-        System.out.println("Restoring... I have chunk number " + chunkNumber);
         byte[] chunkcontent = IOManager.getChunkContent(this.key, key);
+        System.out.println("Restoring... I have chunk number " + chunkNumber + " with size " + chunkcontent.length);
 
-        byte[] chunkResponse = MessageManager.createApplicationHeader(MessageManager.Type.CHUNK, null, key, chunkNumber,
-                0);
+        byte[] chunkResponse = MessageManager.createApplicationHeader(MessageManager.Type.CHUNK, null, null,
+                chunkNumber, 0);
 
         byte[] getChunk = new byte[chunkResponse.length + chunkcontent.length];
         System.arraycopy(chunkResponse, 0, getChunk, 0, chunkResponse.length);
