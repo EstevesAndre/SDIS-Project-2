@@ -9,8 +9,9 @@ import java.math.BigInteger;
 import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Map.Entry;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -19,7 +20,7 @@ import threads.CheckPredecessor;
 import threads.CheckSuccessor;
 import threads.Listener;
 import threads.SendDeleteChunk;
-import threads.x;
+import threads.FingerTablePrint;
 import handlers.IOManager;
 import handlers.MessageManager;
 import handlers.RequestManager;
@@ -134,7 +135,7 @@ public class ChordNode {
             this.storage = new Storage();
         }
 
-        this.executor = new ScheduledThreadPoolExecutor(15);
+        this.executor = new ScheduledThreadPoolExecutor(100);
 
         fingers = new HashMap<Integer, Finger>(FINGERS_SIZE);
         initiateSystemConfigs();
@@ -326,8 +327,8 @@ public class ChordNode {
         executor.submit(new Listener(this));
         executor.scheduleAtFixedRate(new CheckPredecessor(this), 0, 5, TimeUnit.SECONDS);
         executor.scheduleAtFixedRate(new CheckSuccessor(this), 0, 2, TimeUnit.SECONDS);
-        executor.scheduleAtFixedRate(new CheckFingers(this), 0, 20, TimeUnit.SECONDS);
-        executor.scheduleAtFixedRate(new x(this), 1, 10, TimeUnit.SECONDS);
+        executor.scheduleAtFixedRate(new CheckFingers(this), 0, 15, TimeUnit.SECONDS);
+        executor.scheduleAtFixedRate(new FingerTablePrint(this), 1, 18, TimeUnit.SECONDS);
     }
 
     /**
@@ -650,13 +651,15 @@ public class ChordNode {
     public byte[] handleReclaimRequest(String value) {
 
         long size = Long.parseLong(value);
+        Iterator<Entry<BigInteger, Integer>> entry = this.storage.getStoredChunks().entrySet().iterator();
 
         while (this.storage.getMaxCapacity() - this.storage.getCapacityAvailable() > size) {
 
-            Map.Entry<BigInteger, Integer> entry = this.storage.getStoredChunks().entrySet().iterator().next();
+            Map.Entry<BigInteger, Integer> next = entry.next();
 
-            this.deleteChunk(entry.getKey().toString());
-            this.storage.getStoredChunks().remove(entry.getKey());
+            this.deleteChunk(next.getKey().toString());
+            this.storage.getStoredChunks().remove(next.getKey());
+            System.out.println("HERE");
         }
 
         return "OK".getBytes();
