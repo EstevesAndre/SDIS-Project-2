@@ -8,7 +8,7 @@ public abstract class MessageManager {
 
     public enum Type {
         STORED, BACKUP, PUTCHUNK, DELETE_FILE, DELETE_CHUNK, GETCHUNK, CHUNK, REMOVED, JOINED, GET_FILE_INFO, FILE_INFO,
-        GIVE_FILE_INFO, SAVE_FILE_INFO, // first
+        GIVE_FILE_INFO, SAVE_FILE_INFO, RECLAIM, // first
         // project
         // types
         SUCCESSOR, PREDECESSOR, KEY, YOUR_PREDECESSOR, OK, ERROR
@@ -48,16 +48,15 @@ public abstract class MessageManager {
         return new String(response).trim().split("\\s+");
     }
 
-    public static byte[] createApplicationHeader(Type type, String fileID, BigInteger keyBigInteger, int chunkNumber,
-            int replicationDegree) {
+    public static byte[] createApplicationHeader(Type type, String fileID, BigInteger keyBigInteger, int op1, int op2) {
 
         switch (type) {
         case PUTCHUNK:
-            return (type + " " + keyBigInteger + " " + chunkNumber + "\r\n\r\n").getBytes();
+            return (type + " " + keyBigInteger + " " + op1 + "\r\n\r\n").getBytes();
         case CHUNK:
-            return (type + " " + chunkNumber + " " + "\r\n\r\n").getBytes();
+            return (type + " " + op1 + " " + "\r\n\r\n").getBytes();
         case BACKUP:
-            return (type + " " + keyBigInteger + " " + chunkNumber + " " + replicationDegree + "\r\n\r\n").getBytes();
+            return (type + " " + keyBigInteger + " " + op1 + " " + op2 + "\r\n\r\n").getBytes();
         case STORED:
         case GETCHUNK:
             return (type + " " + keyBigInteger).getBytes();
@@ -65,9 +64,11 @@ public abstract class MessageManager {
             return (type + " " + fileID).getBytes();
         case DELETE_CHUNK:
             return (type + " " + keyBigInteger).getBytes();
+        case RECLAIM:
+            return (type + " " + op1).getBytes();
         case SAVE_FILE_INFO:
         case FILE_INFO:
-            return (type + " " + keyBigInteger + " " + chunkNumber + " " + replicationDegree).getBytes();
+            return (type + " " + keyBigInteger + " " + op1 + " " + op2).getBytes();
         case GET_FILE_INFO:
         case GIVE_FILE_INFO:
             return (type + " " + keyBigInteger).getBytes();

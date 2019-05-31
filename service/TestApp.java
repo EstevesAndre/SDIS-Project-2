@@ -69,9 +69,6 @@ public class TestApp {
         case "RECLAIM":
             RequestManager.reclaimRequest(address, port, op1);
             break;
-        case "STATE":
-            RequestManager.stateRequest(address, port, op1);
-            break;
         default:
             System.err.println("Wrong operation to make the request.\n" + "Make sure you use of the following requests:"
                     + "\n- BACKUP" + "\n- RESTORE" + "\n- DELETE" + "\n- RECLAIM" + "\n- STATE" + "\r\n");

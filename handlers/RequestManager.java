@@ -114,7 +114,7 @@ public abstract class RequestManager {
         case "DELETE_CHUNK":
             return node.deleteChunk(received[1]);
         case "RECLAIM":
-            return node.handleReclaimRequest();
+            return node.handleReclaimRequest(received[1]);
         case "GET_FILE_INFO":
             return node.handleGetFileInfo(received);
         case "GIVE_FILE_INFO":
@@ -142,12 +142,7 @@ public abstract class RequestManager {
             for (int j = 0; j < rd; j++) {
                 BigInteger chunkID = IOManager.getStringHashed(fileID + i + j).shiftRight(1);
                 tp.getExecutor().execute(new ClientRequestHelper("BACKUP", tp, null, chunkID, 0, rd, chunks.get(i)));
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
+
             }
         }
 
@@ -204,6 +199,10 @@ public abstract class RequestManager {
                         break;
                     }
                 }
+                if ((new String(chunk)) == null || (new String(chunk)).startsWith("ERROR")) {
+                    System.out.println("Couldn't get chunk");
+                    return;
+                }
 
                 byte[] chunkcontent = Arrays.copyOfRange(chunk, splitIndex, chunk.length);
                 String[] chunkParts = new String(chunk, 0, splitIndex).trim().split("\\s+");
@@ -228,9 +227,6 @@ public abstract class RequestManager {
                 System.err.println("Wrong number of arguments for DELETE operation\n");
             return;
         }
-
-        String fileID = IOManager.getFileHashID(filename);
-
         byte[] request = MessageManager.createApplicationHeader(MessageManager.Type.DELETE_FILE, filename, null, 0, 0);
         byte[] response = RequestManager.sendRequest(address, Integer.parseInt(port), request);
 
@@ -250,9 +246,26 @@ public abstract class RequestManager {
         }
     }
 
-    public static void reclaimRequest(String address, String port, String path) {
-    }
+    public static void reclaimRequest(String address, String port, String value) {
 
-    public static void stateRequest(String address, String port, String option) {
+        byte[] reclaim = MessageManager.createApplicationHeader(MessageManager.Type.RECLAIM, null, null,
+                Integer.parseInt(value), 0);
+
+        byte[] response = RequestManager.sendRequest(address, Integer.parseInt(port), reclaim);
+
+        if (response == null) {
+            if (ChordNode.debug2)
+                System.out.println("Couldn't connect to the given Address + Port");
+            return;
+        }
+
+        String strResponse = new String(response);
+
+        if (ChordNode.debug2) {
+            if (strResponse.equals("ERROR"))
+                System.out.println("Occured an error");
+            else
+                System.out.println("Space reclaimed");
+        }
     }
 }

@@ -1,9 +1,15 @@
 package source;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.math.BigInteger;
 import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -12,6 +18,7 @@ import threads.CheckFingers;
 import threads.CheckPredecessor;
 import threads.CheckSuccessor;
 import threads.Listener;
+import threads.SendDeleteChunk;
 import threads.x;
 import handlers.IOManager;
 import handlers.MessageManager;
@@ -62,11 +69,7 @@ public class ChordNode {
      */
     private ScheduledThreadPoolExecutor executor;
 
-    // KEY <Number of Chunks, Replication Degree used>
-    private ConcurrentHashMap<BigInteger, AbstractMap.SimpleEntry<Integer, Integer>> filesInfo;
-
-    // < Chunk's key, Chunk number >
-    private ConcurrentHashMap<BigInteger, Integer> storedChunks;
+    private Storage storage;
 
     /**
      * Constructor of the first chord node to enter the ring (starting node)
@@ -119,16 +122,45 @@ public class ChordNode {
      * @throws Exception
      */
     private void initialize() throws Exception {
+
+        try {
+            FileInputStream fis = new FileInputStream("Storages/" + this.key.getID() + "/storage.ser");
+            ObjectInputStream input = new ObjectInputStream(fis);
+            this.storage = (Storage) input.readObject();
+            input.close();
+            fis.close();
+
+        } catch (Exception e) {
+            this.storage = new Storage();
+        }
+
         this.executor = new ScheduledThreadPoolExecutor(15);
 
-        filesInfo = new ConcurrentHashMap<BigInteger, AbstractMap.SimpleEntry<Integer, Integer>>();
-        storedChunks = new ConcurrentHashMap<>();
         fingers = new HashMap<Integer, Finger>(FINGERS_SIZE);
         initiateSystemConfigs();
 
         this.initializeFingers();
         this.initializeSuccessors();
         this.initializeThreads();
+    }
+
+    public static void savesInfoStorage(ChordNode node) {
+        try {
+            File storageFile = new File("Storages/" + node.getKey().getID() + "/storage.ser");
+
+            if (!storageFile.exists()) {
+                storageFile.getParentFile().mkdirs();
+                storageFile.createNewFile();
+            }
+
+            FileOutputStream outFile = new FileOutputStream("Storages/" + node.getKey().getID() + "/storage.ser");
+            ObjectOutputStream output = new ObjectOutputStream(outFile);
+            output.writeObject(node.storage);
+            output.close();
+            outFile.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -471,10 +503,13 @@ public class ChordNode {
         BigInteger chunkID = new BigInteger(parts[1]);
         int chunkNr = Integer.parseInt(parts[2]);
 
-        if (!storedChunks.contains(chunkID)) {
-            storedChunks.put(chunkID, chunkNr);
+        if (!this.storage.getStoredChunks().contains(chunkID)) {
+            this.storage.getStoredChunks().put(chunkID, chunkNr);
+            this.storage.updateCapacityAvailable(chunkcontent.length);
             IOManager.storeChunk(this.key, chunkID.toString(), chunkcontent);
+            ChordNode.savesInfoStorage(this);
         }
+        System.out.println("-- " + this.storage.getCapacityAvailable());
 
         return MessageManager.createHeader(MessageManager.Type.OK, null, null);
     }
@@ -483,13 +518,16 @@ public class ChordNode {
 
         BigInteger key = new BigInteger(chunkID);
 
-        if (storedChunks.containsKey(key)) {
+        if (this.storage.getStoredChunks().containsKey(key)) {
             String path = this.getAddress().replace('.', '_') + "_" + this.getPort() + "/" + key;
 
-            IOManager.deleteChunk(path);
-            storedChunks.remove(key);
+            int size = (int) IOManager.deleteChunk(path);
+            this.storage.getStoredChunks().remove(key);
+            this.storage.updateCapacityAvailable(-size);
+            ChordNode.savesInfoStorage(this);
         }
 
+        System.out.println("-- " + this.storage.getCapacityAvailable());
         return MessageManager.createHeader(MessageManager.Type.OK, null, null);
     }
 
@@ -543,11 +581,11 @@ public class ChordNode {
     }
 
     private byte[] getChunk(BigInteger key) {
-        if (!storedChunks.containsKey(key)) {
+        if (!this.storage.getStoredChunks().containsKey(key)) {
             return MessageManager.createHeader(MessageManager.Type.ERROR, null, null);
         }
 
-        int chunkNumber = storedChunks.get(key);
+        int chunkNumber = this.storage.getStoredChunks().get(key);
 
         byte[] chunkcontent = IOManager.getChunkContent(this.key, key);
         System.out.println("Restoring... I have chunk number " + chunkNumber + " with size " + chunkcontent.length);
@@ -601,36 +639,26 @@ public class ChordNode {
         // SEND request to other nodes to delete file
         for (int i = 0; i < numberChunks; i++) {
             for (int j = 0; j < rdUsed; j++) {
-
                 BigInteger chunkKey = IOManager.getStringHashed(filehashname + i + j).shiftRight(1);
-                Finger chunkSuccessor = this.findSuccessor(chunkKey);
-
-                if (chunkSuccessor == null) {
-                    System.err.println("No successor for chunk" + i);
-                    return MessageManager.createHeader(MessageManager.Type.ERROR, fileHash, null);
-                }
-
-                System.out.println("Chunk" + i + " successor " + chunkSuccessor);
-
-                byte[] chunkDeleteRequest = MessageManager.createApplicationHeader(MessageManager.Type.DELETE_CHUNK,
-                        null, chunkKey, 0, 0);
-                byte[] chunkDeleteResponse = RequestManager.sendRequest(chunkSuccessor.getAddress(),
-                        chunkSuccessor.getPort(), chunkDeleteRequest);
-
-                if (chunkDeleteResponse == null) {
-                    System.err.println("Failed to Delete chunk" + i);
-                    return MessageManager.createHeader(MessageManager.Type.ERROR, chunkKey, null);
-                }
-
-                if (MessageManager.parseResponse(chunkDeleteResponse)[0].equals("ERROR"))
-                    return MessageManager.createHeader(MessageManager.Type.ERROR, chunkKey, null);
+                this.executor.execute(new SendDeleteChunk(this, chunkKey));
             }
         }
 
         return MessageManager.createHeader(MessageManager.Type.OK, null, null);
     }
 
-    public byte[] handleReclaimRequest() {
+    public byte[] handleReclaimRequest(String value) {
+
+        long size = Long.parseLong(value);
+
+        while (this.storage.getMaxCapacity() - this.storage.getCapacityAvailable() > size) {
+
+            Map.Entry<BigInteger, Integer> entry = this.storage.getStoredChunks().entrySet().iterator().next();
+
+            this.deleteChunk(entry.getKey().toString());
+            this.storage.getStoredChunks().remove(entry.getKey());
+        }
+
         return "OK".getBytes();
     }
 
@@ -641,8 +669,8 @@ public class ChordNode {
             return MessageManager.createHeader(MessageManager.Type.ERROR, null, null);
         }
         BigInteger fileHash = new BigInteger(received[1]);
-        if (filesInfo.containsKey(fileHash)) {
-            AbstractMap.SimpleEntry<Integer, Integer> value = filesInfo.get(fileHash);
+        if (this.storage.getFilesInfo().containsKey(fileHash)) {
+            AbstractMap.SimpleEntry<Integer, Integer> value = this.storage.getFilesInfo().get(fileHash);
 
             return MessageManager.createApplicationHeader(MessageManager.Type.FILE_INFO, null, fileHash, value.getKey(),
                     value.getValue());
@@ -655,15 +683,19 @@ public class ChordNode {
 
         BigInteger key = new BigInteger(received[1]);
 
-        if (filesInfo.containsKey(key)) {
-            filesInfo.remove(key);
+        if (this.storage.getFilesInfo().containsKey(key)) {
+            this.storage.getFilesInfo().remove(key);
+            IOManager.deleteChunk("filesInfo/" + key);
         }
 
-        if (filesInfo.put(key, new AbstractMap.SimpleEntry<Integer, Integer>(Integer.parseInt(received[2]),
-                Integer.parseInt(received[3]))) != null) {
+        if (this.storage.getFilesInfo().put(key, new AbstractMap.SimpleEntry<Integer, Integer>(
+                Integer.parseInt(received[2]), Integer.parseInt(received[3]))) != null) {
             return MessageManager.createHeader(MessageManager.Type.ERROR, null, null);
         }
 
+        byte[] saveInfo = (received[2] + " " + received[3]).getBytes();
+        IOManager.storeFileInfo("filesInfo", key.toString(), saveInfo);
+        ChordNode.savesInfoStorage(this);
         return MessageManager.createApplicationHeader(MessageManager.Type.STORED, null, null, 0, 0);
     }
 

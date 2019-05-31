@@ -103,6 +103,10 @@ public class IOManager implements java.io.Serializable {
         return chunks;
     }
 
+    public static byte[] readFileInfo() {
+        return null;
+    }
+
     public static void restoreFile(String pathString, ConcurrentHashMap<Integer, byte[]> chunks) {
 
         try {
@@ -147,6 +151,36 @@ public class IOManager implements java.io.Serializable {
             FileChannel fc = fout.getChannel();
 
             ByteBuffer buffer = ByteBuffer.allocate(MAX_CHUNK_SIZE);
+
+            for (int i = 0; i < content.length; ++i) {
+                buffer.put(content[i]);
+            }
+
+            buffer.flip();
+
+            fc.write(buffer);
+
+            fout.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void storeFileInfo(String pathString, String filename, byte[] content) {
+        try {
+            Path path = Paths.get(pathString);
+
+            if (!Files.exists(path))
+                Files.createDirectories(path);
+
+            FileOutputStream fout;
+            fout = new FileOutputStream(pathString + '/' + filename);
+
+            FileChannel fc = fout.getChannel();
+
+            ByteBuffer buffer = ByteBuffer.allocate(1024);
 
             for (int i = 0; i < content.length; ++i) {
                 buffer.put(content[i]);
@@ -241,15 +275,21 @@ public class IOManager implements java.io.Serializable {
         return null;
     }
 
-    public static void deleteChunk(String path) {
+    public static long deleteChunk(String path) {
 
         try {
             Path filePath = Paths.get(path);
-            if (Files.exists(filePath))
+
+            if (Files.exists(filePath)) {
+                long size = Files.size(filePath);
                 Files.delete(filePath);
+                return size;
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
+        return 0;
+
     }
 
 }
