@@ -201,8 +201,13 @@ public class IOManager implements java.io.Serializable {
             System.err.println("Error: SHA-1 Failed!");
             e.printStackTrace();
         }
+        BigInteger key = new BigInteger(1, hashed);
 
-        return new BigInteger(1, hashed);
+        long newKey = key.longValue();
+        if (newKey < 0)
+            newKey += Long.MAX_VALUE;
+
+        return new BigInteger(String.valueOf(newKey));
     }
 
     public static String bytesToHex(byte[] bytes) {

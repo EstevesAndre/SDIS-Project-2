@@ -142,6 +142,12 @@ public abstract class RequestManager {
             for (int j = 0; j < rd; j++) {
                 BigInteger chunkID = IOManager.getStringHashed(fileID + i + j).shiftRight(1);
                 tp.getExecutor().execute(new ClientRequestHelper("BACKUP", tp, null, chunkID, 0, rd, chunks.get(i)));
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
             }
         }
 

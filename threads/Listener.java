@@ -39,10 +39,6 @@ public class Listener implements Runnable {
 
             while (true) {
                 sslSocket = (SSLSocket) this.sslServerSocket.accept();
-
-                if (this.node.getExecutor().getActiveCount() > 1)
-                    System.out.println(this.node.getExecutor().getActiveCount());
-
                 this.node.getExecutor().execute(new Request(this.node, sslSocket));
             }
         } catch (IOException e) {

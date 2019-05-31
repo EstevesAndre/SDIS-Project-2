@@ -25,7 +25,7 @@ public class ChordNode {
     /**
      * Size of finger table
      */
-    public static final int FINGERS_SIZE = 180;
+    public static final int FINGERS_SIZE = 64;
 
     /**
      * Unique identifier
@@ -119,7 +119,7 @@ public class ChordNode {
      * @throws Exception
      */
     private void initialize() throws Exception {
-        this.executor = new ScheduledThreadPoolExecutor(4);
+        this.executor = new ScheduledThreadPoolExecutor(15);
 
         filesInfo = new ConcurrentHashMap<BigInteger, AbstractMap.SimpleEntry<Integer, Integer>>();
         storedChunks = new ConcurrentHashMap<>();
@@ -295,7 +295,7 @@ public class ChordNode {
         executor.scheduleAtFixedRate(new CheckPredecessor(this), 0, 5, TimeUnit.SECONDS);
         executor.scheduleAtFixedRate(new CheckSuccessor(this), 0, 2, TimeUnit.SECONDS);
         executor.scheduleAtFixedRate(new CheckFingers(this), 0, 20, TimeUnit.SECONDS);
-        // executor.scheduleAtFixedRate(new x(this), 1, 10, TimeUnit.SECONDS);
+        executor.scheduleAtFixedRate(new x(this), 1, 10, TimeUnit.SECONDS);
     }
 
     /**
@@ -374,18 +374,18 @@ public class ChordNode {
 
         Finger looking = null;
         try {
-            looking = new Finger(received[2], received[3]);
+            looking = new Finger(new BigInteger(received[1]));
         } catch (Exception e) {
             e.printStackTrace();
         }
-
         Finger ret = findSuccessor(looking);
 
         if (ret == null)
             return MessageManager.createHeader(MessageManager.Type.ERROR, null, null);
-        else
+        else {
             return MessageManager.createHeader(MessageManager.Type.SUCCESSOR, ret.getID(),
                     new String[] { ret.getAddress(), String.valueOf(ret.getPort()) });
+        }
     }
 
     /**
@@ -416,10 +416,14 @@ public class ChordNode {
         if (toSendSuccessorRequest == null)
             return this.key;
 
-        byte[] request = MessageManager.createHeader(MessageManager.Type.SUCCESSOR, this.key.getID(),
+        // if(toSendSuccessorRequest.equals(this.key))
+
+        byte[] request = MessageManager.createHeader(MessageManager.Type.SUCCESSOR, finger.getID(),
                 new String[] { this.getAddress(), String.valueOf(this.getPort()) });
+
         byte[] response = RequestManager.sendRequest(toSendSuccessorRequest.getAddress(),
                 toSendSuccessorRequest.getPort(), request);
+
         // [SUCCESSOR ID ADDRESS PORT]
         if (response == null) {
             if (ChordNode.debug)
@@ -529,12 +533,10 @@ public class ChordNode {
     public byte[] handleGetChunkRequest(String[] received) {
         BigInteger key = new BigInteger(received[1]);
         Finger succ = findSuccessor(key);
-        System.out.println("ASDSA");
 
         if (succ.equals(this.key)) {
             return getChunk(key);
         }
-        System.out.println("ASDSA");
 
         byte[] getChunk = MessageManager.createApplicationHeader(MessageManager.Type.GETCHUNK, null, key, 0, 0);
         return RequestManager.sendRequest(succ.getAddress(), succ.getPort(), getChunk);
@@ -544,7 +546,6 @@ public class ChordNode {
         if (!storedChunks.containsKey(key)) {
             return MessageManager.createHeader(MessageManager.Type.ERROR, null, null);
         }
-        System.out.println("A11SDSA");
 
         int chunkNumber = storedChunks.get(key);
 
@@ -581,7 +582,7 @@ public class ChordNode {
 
         byte[] fileInfo = RequestManager.sendRequest(fileSuccessor.getAddress(), fileSuccessor.getPort(),
                 fileInfoRequest);
-
+        System.out.println(new String(fileInfo));
         if (fileInfo == null) {
             System.err.println("Failed to get file information");
             return MessageManager.createHeader(MessageManager.Type.ERROR, fileHash, null);
@@ -640,10 +641,8 @@ public class ChordNode {
             return MessageManager.createHeader(MessageManager.Type.ERROR, null, null);
         }
         BigInteger fileHash = new BigInteger(received[1]);
-        System.out.println("---> " + fileHash + " " + filesInfo.size());
         if (filesInfo.containsKey(fileHash)) {
             AbstractMap.SimpleEntry<Integer, Integer> value = filesInfo.get(fileHash);
-            System.out.println("--->2 " + fileHash + " " + filesInfo.size());
 
             return MessageManager.createApplicationHeader(MessageManager.Type.FILE_INFO, null, fileHash, value.getKey(),
                     value.getValue());

@@ -18,6 +18,7 @@ public class CheckPredecessor implements Runnable {
 
     @Override
     public void run() {
+        System.out.println("CheckPredecessor");
         Finger predecessor = chordNode.getPredecessor();
 
         if (predecessor == null) {

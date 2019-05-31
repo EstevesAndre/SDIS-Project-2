@@ -16,6 +16,7 @@ public class CheckSuccessor implements Runnable {
 
     @Override
     public void run() {
+        System.out.println("CheckSuccessor");
         Finger successor = chordNode.getSuccessor();
 
         if (successor == null) {

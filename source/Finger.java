@@ -13,10 +13,19 @@ public class Finger {
         this.address = address;
         this.port = port;
         this.ID = IOManager.getStringHashed(address + '_' + port);
+        this.ID = new BigInteger(String.valueOf(ID.longValue()));
     }
 
     public Finger(String address, String port) throws Exception {
         this(address, Integer.parseInt(port));
+    }
+
+    public Finger(long key, int shift) {
+        long newKey = key + (long) Math.pow(2, shift);
+        if (newKey < 0)
+            newKey += Long.MAX_VALUE;
+
+        this.ID = new BigInteger(String.valueOf(newKey));
     }
 
     public Finger(BigInteger key) {
@@ -42,12 +51,20 @@ public class Finger {
      * @return true if finger is betweem left and right, false otherwise
      */
     public boolean comparator(Finger left, Finger right) {
-
+        boolean x;
         if (left.getID().compareTo(right.getID()) == -1) { // left < right
-            return (ID.compareTo(left.getID()) == 1) && (ID.compareTo(right.getID()) != 1);
+            // System.out.print("a ");
+            x = (ID.compareTo(left.getID()) == 1) && (ID.compareTo(right.getID()) != 1);
         } else {
-            return (ID.compareTo(left.getID()) == 1) || (ID.compareTo(right.getID()) != 1);
+            // System.out.print("b ");
+
+            x = (ID.compareTo(left.getID()) == 1) || (ID.compareTo(right.getID()) != 1);
         }
+
+        // System.out.println(left.getID() + " " + this.ID + " " + right.getID() + " " +
+        // x);
+        return x;
+
     }
 
     /**

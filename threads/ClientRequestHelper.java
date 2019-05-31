@@ -3,7 +3,6 @@ package threads;
 import java.math.BigInteger;
 
 import handlers.Chunk;
-import handlers.IOManager;
 import handlers.MessageManager;
 import handlers.RequestManager;
 import service.TestApp;
