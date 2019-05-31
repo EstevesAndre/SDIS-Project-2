@@ -12,7 +12,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
+import service.TestApp;
 import source.ChordNode;
+import threads.ClientRequestHelper;
 
 public abstract class RequestManager {
 
@@ -52,12 +54,9 @@ public abstract class RequestManager {
         byte[] response = null;
 
         try {
-            Thread.sleep(100);
             response = getResponse(socket);
             socket.close();
         } catch (IOException e) {
-            // e.printStackTrace();
-        } catch (InterruptedException e) {
             // e.printStackTrace();
         }
 
@@ -116,18 +115,20 @@ public abstract class RequestManager {
             return node.deleteChunk(received[1]);
         case "RECLAIM":
             return node.handleReclaimRequest();
-        case "STATE":
-            return node.handleStateRequest();
         case "GET_FILE_INFO":
             return node.handleGetFileInfo(received);
+        case "GIVE_FILE_INFO":
+            return node.handleGiveFileInfoRequest(received);
         case "FILE_INFO":
+            return node.handleFileInfoRequest(received);
+        case "SAVE_FILE_INFO":
             return node.handleSaveFileInfoRequest(received);
         default:
             throw new IllegalArgumentException("Invalid message type for the request: " + received[0]);
         }
     }
 
-    public static void backupRequest(String address, String port, String file, String repDegree) {
+    public static void backupRequest(TestApp tp, String address, String port, String file, String repDegree) {
         // prepare request
         // using java NIO to open file and create chunks
 
@@ -140,53 +141,20 @@ public abstract class RequestManager {
         for (int i = 0; i < chunks.size(); i++) {
             for (int j = 0; j < rd; j++) {
                 BigInteger chunkID = IOManager.getStringHashed(fileID + i + j).shiftRight(1);
-
-                byte[] header = MessageManager.createApplicationHeader(MessageManager.Type.BACKUP, null, chunkID,
-                        chunks.get(i).getId(), rd);
-                byte[] putChunk = new byte[header.length + chunks.get(i).getSize()];
-                System.arraycopy(header, 0, putChunk, 0, header.length);
-                System.arraycopy(chunks.get(i).getContent(), 0, putChunk, header.length, chunks.get(i).getSize());
-
-                byte[] response = RequestManager.sendRequest(address, Integer.parseInt(port), putChunk);
-
-                try {
-                    Thread.sleep(50);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-
-                if (response == null) {
-                    System.err.println("Failed to connect...");
-                    return;
-                }
-
-                if ((new String(response)).startsWith("STORED"))
-                    System.out.println("Successfully stored chunk " + i + " with rd = " + j);
-                else {
-                    System.err.println("Failed to store chunk " + i + " with rd = " + j);
-                    return;
-                }
-
+                tp.getExecutor().execute(new ClientRequestHelper("BACKUP", tp, null, chunkID, 0, rd, chunks.get(i)));
             }
         }
 
         // Sends file info to be store in the ring
-        byte[] fileInfo = MessageManager.createApplicationHeader(MessageManager.Type.FILE_INFO, null,
-                IOManager.getStringHashed(file), chunks.size(), rd);
-        byte[] response = RequestManager.sendRequest(address, Integer.parseInt(port), fileInfo);
-
-        if ((new String(response)).startsWith("STORED"))
-            System.out.println("Successfully stored chunk info");
-        else {
-            System.err.println("Failed to store chunk info");
-            return;
-        }
+        tp.getExecutor().execute(new ClientRequestHelper("FILE_INFO", tp, null, IOManager.getStringHashed(file),
+                chunks.size(), rd, null));
 
         System.out.println("Finished BACKUP");
     }
 
     public static void restoreRequest(String address, String port, String file) {
-        byte[] fileInfo = MessageManager.createApplicationHeader(MessageManager.Type.GET_FILE_INFO, null,
+
+        byte[] fileInfo = MessageManager.createApplicationHeader(MessageManager.Type.GIVE_FILE_INFO, null,
                 IOManager.getStringHashed(file), 0, 0);
         byte[] response = RequestManager.sendRequest(address, Integer.parseInt(port), fileInfo);
 
@@ -197,8 +165,10 @@ public abstract class RequestManager {
 
         String[] parts = MessageManager.parseResponse(response);
 
-        if (parts[0] == "ERROR")
-            throw new IllegalArgumentException("Received error to GET_FILE_INFO");
+        if (parts[0].equals("ERROR")) {
+            System.err.println("File not backed up!");
+            return;
+        }
 
         System.out.println("Received " + new String(response));
 
@@ -210,10 +180,11 @@ public abstract class RequestManager {
         for (int i = 0; i < numberOfChunks; i++) {
             for (int j = 0; j < rd; j++) {
                 BigInteger chunkID = IOManager.getStringHashed(fileID + i + j).shiftRight(1);
+
                 byte[] getChunk = MessageManager.createApplicationHeader(MessageManager.Type.GETCHUNK, null, chunkID, 0,
                         0);
                 byte[] chunk = RequestManager.sendRequest(address, Integer.parseInt(port), getChunk);
-
+                // System.out.println("HERE");
                 if (chunk == null) {
                     System.out.println("Failed connection");
                     return;

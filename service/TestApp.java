@@ -1,8 +1,15 @@
 package service;
 
+import java.math.BigInteger;
 import java.security.InvalidParameterException;
+import java.util.ArrayList;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 
+import handlers.Chunk;
+import handlers.IOManager;
+import handlers.MessageManager;
 import handlers.RequestManager;
+import threads.ClientRequestHelper;
 
 public class TestApp {
 
@@ -12,6 +19,7 @@ public class TestApp {
     private String port;
     private String op1;
     private String op2;
+    private ScheduledThreadPoolExecutor executor;
 
     public TestApp(String args[]) throws Exception {
         this.address = args[0];
@@ -21,7 +29,7 @@ public class TestApp {
         this.op2 = (args.length == 5) ? args[4] : null;
         if (this.operation.equals("BACKUP") && args.length == 4)
             throw new InvalidParameterException("Backup operation must have 5 arguments");
-
+        this.executor = new ScheduledThreadPoolExecutor(4);
     }
 
     // Usage: java -Djavax.net.ssl.trustStore=truststore
@@ -43,13 +51,14 @@ public class TestApp {
         TestApp testApp = new TestApp(args);
 
         testApp.invokeRequest();
+        testApp.executor.shutdown();
     }
 
     private void invokeRequest() throws Exception {
 
         switch (this.operation) {
         case "BACKUP":
-            RequestManager.backupRequest(address, port, op1, op2);
+            RequestManager.backupRequest(this, address, port, op1, op2);
             break;
         case "RESTORE":
             RequestManager.restoreRequest(address, port, op1);
@@ -68,6 +77,48 @@ public class TestApp {
                     + "\n- BACKUP" + "\n- RESTORE" + "\n- DELETE" + "\n- RECLAIM" + "\n- STATE" + "\r\n");
             return;
         }
-
     }
+
+    public String getOperation() {
+        return operation;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public String getPort() {
+        return port;
+    }
+
+    public ScheduledThreadPoolExecutor getExecutor() {
+        return executor;
+    }
+
+    public void handleResponse(String type, byte[] response) {
+
+        if (response == null) {
+            System.err.println("Failed to connect...");
+            return;
+        }
+
+        switch (type) {
+        case "BACKUP":
+            if ((new String(response)).startsWith("STORED"))
+                System.out.println("Successfully stored chunk ");
+            else {
+                System.err.println("Failed to store chunk ");
+                return;
+            }
+            break;
+        case "FILE_INFO":
+            if ((new String(response)).startsWith("STORED"))
+                System.out.println("Successfully stored chunk info");
+            else {
+                System.err.println("Failed to store chunk info");
+                return;
+            }
+        }
+    }
+
 }

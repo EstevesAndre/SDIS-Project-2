@@ -7,7 +7,8 @@ import java.math.BigInteger;
 public abstract class MessageManager {
 
     public enum Type {
-        STORED, BACKUP, PUTCHUNK, DELETE_FILE, DELETE_CHUNK, GETCHUNK, CHUNK, REMOVED, JOINED, GET_FILE_INFO, FILE_INFO, // first
+        STORED, BACKUP, PUTCHUNK, DELETE_FILE, DELETE_CHUNK, GETCHUNK, CHUNK, REMOVED, JOINED, GET_FILE_INFO, FILE_INFO,
+        GIVE_FILE_INFO, SAVE_FILE_INFO, // first
         // project
         // types
         SUCCESSOR, PREDECESSOR, KEY, YOUR_PREDECESSOR, OK, ERROR
@@ -64,9 +65,11 @@ public abstract class MessageManager {
             return (type + " " + fileID).getBytes();
         case DELETE_CHUNK:
             return (type + " " + keyBigInteger).getBytes();
+        case SAVE_FILE_INFO:
         case FILE_INFO:
             return (type + " " + keyBigInteger + " " + chunkNumber + " " + replicationDegree).getBytes();
         case GET_FILE_INFO:
+        case GIVE_FILE_INFO:
             return (type + " " + keyBigInteger).getBytes();
         default:
             throw new IllegalArgumentException("Invalid message type for the request: " + type);
